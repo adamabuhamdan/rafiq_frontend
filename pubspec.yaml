@@ -1,0 +1,53 @@
+name: rafiq
+description: Rafiq – Your personal AI health assistant
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  equatable: ^2.0.5  
+
+  # Localization
+  easy_localization: ^3.0.7
+
+  # State Management
+  riverpod: ^2.5.1
+  flutter_riverpod: ^2.5.1
+
+  # Networking
+  http: ^1.2.2
+  dio: ^5.4.3+1   # optional but powerful
+
+  # Image picking & camera
+  image_picker: ^1.1.2
+  camera: ^0.10.6
+
+  # UI & Helpers
+  flutter_svg: ^2.0.10+1
+  intl: 0.20.2
+  shimmer: ^3.0.0
+
+  # Storage
+  shared_preferences: ^2.2.3
+  flutter_secure_storage: ^9.0.0
+  # Navigation
+  go_router: ^14.2.0
+  flutter_markdown: ^0.7.7+1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/translations/
+    - assets/icons/
+    - assets/images/
