@@ -66,17 +66,15 @@ class _AiScheduleScreenState extends ConsumerState<AiScheduleScreen> {
     final notifier = ref.read(pharmacyProvider.notifier);
     final isArabic = context.locale.languageCode == 'ar';
 
-    // Replace provider medications with the adjusted ones, then save
-    for (int i = 0; i < adjustedMeds.length; i++) {
-      notifier.updateMedication(i, adjustedMeds[i]);
-    }
-
     try {
-      await notifier.saveMedications();
+      // Save adjustedMeds directly — bypasses the provider state mismatch
+      await notifier.replaceAndSave(adjustedMeds);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(isArabic ? 'تم حفظ الجدول بنجاح ✓' : 'Schedule saved successfully ✓',
-              style: const TextStyle(fontWeight: FontWeight.bold)),
+          content: Text(
+            isArabic ? 'تم حفظ الجدول بنجاح ✓' : 'Schedule saved successfully ✓',
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
           backgroundColor: AppColors.primary,
           behavior: SnackBarBehavior.floating,
         ));
@@ -95,6 +93,7 @@ class _AiScheduleScreenState extends ConsumerState<AiScheduleScreen> {
       }
     }
   }
+
 
   // ── Build ──────────────────────────────────────────────────────────────────
 

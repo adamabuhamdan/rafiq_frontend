@@ -16,28 +16,36 @@ class PharmacyService {
 
   Future<Map<String, dynamic>> scanPrescription(
       String patientId, String base64Image) async {
-    final response =
-        await _apiClient.post('/pharmacy/scan-prescription', data: {
-      'patient_id': patientId,
-      'image_base64': base64Image,
-      'media_type': 'image/jpeg',
-    });
+    final response = await _apiClient.post(
+      '/pharmacy/scan-prescription',
+      data: {
+        'patient_id': patientId,
+        'image_base64': base64Image,
+        'media_type': 'image/jpeg',
+      },
+      timeout: const Duration(minutes: 2),
+    );
     return response.data;
   }
 
   Future<Map<String, dynamic>> suggestSchedule(
       String patientId, List<Medication> newMedications) async {
-    final response = await _apiClient.post('/pharmacy/suggest-schedule', data: {
-      'patient_id': patientId,
-      'new_medications': newMedications
-          .map((m) => {
-                'name': m.name,
-                'active_ingredient': m.activeIngredient,
-                'dosage_frequency': m.dosage,
-                'is_primary': m.isPrimary,
-              })
-          .toList(),
-    });
+    final response = await _apiClient.post(
+      '/pharmacy/suggest-schedule',
+      data: {
+        'patient_id': patientId,
+        'new_medications': newMedications
+            .map((m) => {
+                  'id': m.id,
+                  'name': m.name,
+                  'active_ingredient': m.activeIngredient,
+                  'dosage_frequency': m.dosage,
+                  'is_primary': m.isPrimary,
+                })
+            .toList(),
+      },
+      timeout: const Duration(minutes: 2),
+    );
     return response.data; // Includes explanation and suggestions list
   }
 

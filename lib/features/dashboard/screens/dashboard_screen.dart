@@ -241,10 +241,8 @@ class DashboardContent extends ConsumerWidget {
                       ),
                     );
                   }
-                  if (todayDoses.isEmpty) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
-                  return _buildTimeline(context, todayDoses);
+                  // Return grouped medication cards directly instead of timeline doses
+                  return _buildMedicationsList(context, meds);
                 },
                 loading: () => const Center(child: CircularProgressIndicator()),
                 error: (err, _) => Text('Error: $err'),
@@ -394,192 +392,170 @@ class DashboardContent extends ConsumerWidget {
     );
   }
 
-  // ── Chronological Timeline ─────────────────────────────────────────────────
-  Widget _buildTimeline(BuildContext context, List<DoseEntry> doses) {
-    return ListView.builder(
+  // ── Medications List (Grouped Cards) ───────────────────────────────────────
+  Widget _buildMedicationsList(BuildContext context, List<Medication> meds) {
+    return ListView.separated(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      itemCount: doses.length,
+      itemCount: meds.length,
+      separatorBuilder: (context, index) => const SizedBox(height: 16),
       itemBuilder: (context, index) {
-        final dose = doses[index];
-        final isLast = index == doses.length - 1;
-        return _buildTimelineEntry(context, dose, isLast);
+        return _buildMedicationCard(context, meds[index]);
       },
     );
   }
 
-  Widget _buildTimelineEntry(BuildContext context, DoseEntry dose, bool isLast) {
-    final timeLabel = TimeOfDay(hour: dose.time.hour, minute: dose.time.minute)
-        .format(context);
-    final now = DateTime.now();
-    final currentMinutes = now.hour * 60 + now.minute;
-    final doseMinutes = dose.time.hour * 60 + dose.time.minute;
-    final isPast = doseMinutes < currentMinutes;
-
-    return IntrinsicHeight(
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // ── Timeline spine ─────────────────────────────────────────────────
-          SizedBox(
-            width: 72,
-            child: Column(
-              children: [
-                Text(
-                  timeLabel,
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                    color: isPast ? Colors.grey.shade400 : AppColors.primary,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 6),
-                Container(
-                  width: 12,
-                  height: 12,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: isPast ? Colors.grey.shade300 : AppColors.highlight,
-                    border: Border.all(
-                      color: isPast ? Colors.grey.shade300 : AppColors.highlight,
-                      width: 2,
-                    ),
-                  ),
-                ),
-                if (!isLast)
-                  Expanded(
-                    child: Container(
-                      width: 2,
-                      color: Colors.grey.shade200,
-                      margin: const EdgeInsets.symmetric(vertical: 4),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-
-          const SizedBox(width: 12),
-
-          // ── Dose card ──────────────────────────────────────────────────────
-          Expanded(
-            child: Padding(
-              padding: EdgeInsets.only(bottom: isLast ? 0 : 16),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border(
-                    left: BorderSide(
-                      color: isPast ? Colors.grey.shade200 : AppColors.highlight,
-                      width: 3,
-                    ),
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.04),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: dose.medications.map((med) {
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 10),
-                        child: _buildMedicationInDose(med, isPast),
-                      );
-                    }).toList(),
-                  ),
-                ),
-              ),
-            ),
+  Widget _buildMedicationCard(BuildContext context, Medication med) {
+    final isArabic = context.locale.languageCode == 'ar';
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildMedicationInDose(Medication med, bool isPast) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: isPast
-                    ? Colors.grey.shade100
-                    : AppColors.secondary.withOpacity(0.3),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(
-                Icons.medication_liquid,
-                color: isPast ? Colors.grey.shade400 : AppColors.primary,
-                size: 18,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    med.name,
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                      color: isPast ? Colors.grey.shade500 : Colors.black87,
-                    ),
-                  ),
-                  if (med.dosage.isNotEmpty)
-                    Text(
-                      med.dosage,
-                      style: TextStyle(
-                          fontSize: 13, color: Colors.grey.shade600),
-                    ),
-                ],
-              ),
-            ),
-            if (isPast)
-              Icon(Icons.check_circle, color: Colors.grey.shade300, size: 20),
-          ],
-        ),
-        // AI Instruction chip
-        if (med.aiInstruction != null && med.aiInstruction!.isNotEmpty) ...[
-          const SizedBox(height: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            decoration: BoxDecoration(
-              color: AppColors.accent.withOpacity(0.15),
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: AppColors.accent.withOpacity(0.4)),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
+            // ── Header: Med Icon + Name + Dosage
+            Row(
               children: [
-                Icon(Icons.tips_and_updates_outlined,
-                    size: 14, color: AppColors.highlight),
-                const SizedBox(width: 6),
-                Flexible(
-                  child: Text(
-                    med.aiInstruction!,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: AppColors.primary.withOpacity(0.8),
-                      fontStyle: FontStyle.italic,
-                    ),
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: AppColors.secondary.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(
+                    Icons.medication_liquid,
+                    color: AppColors.primary,
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        med.name,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18,
+                          color: Colors.black87,
+                        ),
+                      ),
+                      if (med.dosage.isNotEmpty)
+                        Text(
+                          med.dosage,
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey.shade600,
+                          ),
+                        ),
+                    ],
                   ),
                 ),
               ],
             ),
-          ),
-        ],
-      ],
+            const SizedBox(height: 16),
+
+            // ── AI Advice Mini-card
+            if (med.aiInstruction != null && med.aiInstruction!.isNotEmpty) ...[
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                decoration: BoxDecoration(
+                  color: AppColors.accent.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.accent.withOpacity(0.4)),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(Icons.tips_and_updates,
+                        size: 18, color: AppColors.highlight),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        med.aiInstruction!,
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: AppColors.primary.withOpacity(0.9),
+                          height: 1.4,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
+
+            const Divider(),
+            const SizedBox(height: 12),
+
+            // ── Alarms Section
+            Text(
+              isArabic ? 'أوقات الجرعات' : 'Dose Times',
+              style: const TextStyle(
+                fontWeight: FontWeight.w700,
+                fontSize: 15,
+                color: AppColors.primary,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: med.times.map((dt) {
+                final timeLabel = TimeOfDay(hour: dt.hour, minute: dt.minute).format(context);
+                final now = DateTime.now();
+                final currentMinutes = now.hour * 60 + now.minute;
+                final doseMinutes = dt.hour * 60 + dt.minute;
+                final isPast = doseMinutes < currentMinutes;
+
+                return Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: isPast ? Colors.grey.shade100 : AppColors.highlight.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: isPast ? Colors.grey.shade300 : AppColors.highlight.withOpacity(0.3),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.access_time,
+                        size: 16,
+                        color: isPast ? Colors.grey.shade500 : AppColors.highlight,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        timeLabel,
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: isPast ? Colors.grey.shade500 : AppColors.primary,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }).toList(),
+            ),
+          ],
+        ),
+      ),
     );
   }
 

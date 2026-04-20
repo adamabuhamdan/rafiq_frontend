@@ -139,7 +139,9 @@ class PharmacyNotifier extends StateNotifier<PharmacyState> {
 
       final List<Medication> optimizedMeds = suggestionsRaw.map((s) {
         final med = Medication.fromJson(s as Map<String, dynamic>);
-        return med.copyWith(id: DateTime.now().microsecondsSinceEpoch.toString() + suggestionsRaw.indexOf(s).toString());
+        return med.id.isEmpty
+            ? med.copyWith(id: DateTime.now().microsecondsSinceEpoch.toString() + suggestionsRaw.indexOf(s).toString())
+            : med;
       }).toList();
 
       state = state.copyWith(isLoading: false);
@@ -149,6 +151,21 @@ class PharmacyNotifier extends StateNotifier<PharmacyState> {
       rethrow;
     }
   }
+
+  /// Save a specific list of medications directly (used by AiScheduleScreen).
+  /// Bypasses the provider state to avoid ID/length mismatch issues.
+  Future<void> replaceAndSave(List<Medication> meds) async {
+    if (_patientId == null || meds.isEmpty) return;
+    state = state.copyWith(isLoading: true);
+    try {
+      await _pharmacyService.saveMedications(_patientId!, meds);
+      state = state.copyWith(medications: [], isLoading: false);
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+      rethrow;
+    }
+  }
+
 
   void clearMedications() {
     state = const PharmacyState();
