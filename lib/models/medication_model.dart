@@ -6,12 +6,14 @@ class Medication extends Equatable {
   final String name;
   final String activeIngredient;
   final String dosage;
-  final DateTime time; // current single time logic for UI simplicity
-  final String frequency; // daily, twice daily etc. (Can be phased out later)
-  final bool isPrimary;
-  final List<String> weekdays; // e.g. ["mon", "tue"]
 
-  // 1. إضافة حقل تعليمات الذكاء الاصطناعي (مسموح أن يكون فارغاً Null)
+  /// All alarm times for this medication (internal Flutter representation).
+  /// Stored as DateTime(0,0,0,h,m,s) for easy TimeOfDay conversion and sorting.
+  final List<DateTime> times;
+
+  final String frequency;
+  final bool isPrimary;
+  final List<String> weekdays;
   final String? aiInstruction;
 
   const Medication({
@@ -19,21 +21,31 @@ class Medication extends Equatable {
     required this.name,
     required this.activeIngredient,
     required this.dosage,
-    required this.time,
+    required this.times,
     required this.frequency,
     this.isPrimary = false,
     this.weekdays = const ["mon", "tue", "wed", "thu", "fri", "sat", "sun"],
-    this.aiInstruction, // 2. إضافته هنا
+    this.aiInstruction,
   });
 
+  /// Backward-compat getter — first alarm time (used by nextDoseProvider, etc.)
+  DateTime get time => times.isNotEmpty ? times.first : DateTime.now();
+
+  // ── Deserialization ──────────────────────────────────────────────────────────
   factory Medication.fromJson(Map<String, dynamic> json) {
-    // Handling backend "times" list by picking first for UI model
-    final List<dynamic> timesList = json['times'] ?? [];
-    DateTime parsedTime = DateTime.now();
-    if (timesList.isNotEmpty) {
-      final String firstTime = timesList.first.toString();
-      final parts = firstTime.split(':');
-      parsedTime = DateTime(0, 0, 0, int.parse(parts[0]), int.parse(parts[1]));
+    // Parse times list from backend (strings like "08:00:00" or "08:00")
+    final List<dynamic> rawTimes = json['times'] ?? [];
+    final List<DateTime> parsedTimes = rawTimes.map((t) {
+      final parts = t.toString().split(':');
+      final h = int.tryParse(parts[0]) ?? 0;
+      final m = parts.length > 1 ? (int.tryParse(parts[1]) ?? 0) : 0;
+      final s = parts.length > 2 ? (int.tryParse(parts[2]) ?? 0) : 0;
+      return DateTime(0, 0, 0, h, m, s);
+    }).toList();
+
+    // Fallback: if backend sends no times, default to now
+    if (parsedTimes.isEmpty) {
+      parsedTimes.add(DateTime.now());
     }
 
     return Medication(
@@ -42,64 +54,63 @@ class Medication extends Equatable {
       activeIngredient: json['active_ingredient'] ?? '',
       dosage: json['dosage_frequency'] ?? '',
       frequency: json['dosage_frequency'] ?? '',
-      time: parsedTime,
+      times: parsedTimes,
       isPrimary: json['is_primary'] ?? false,
       weekdays: List<String>.from(json['weekdays'] ?? []),
-      aiInstruction: json['ai_instruction'], // 3. قراءة النصيحة من الباك-إند
+      aiInstruction: json['ai_instruction'],
     );
   }
 
+  // ── Serialization ────────────────────────────────────────────────────────────
   Map<String, dynamic> toJson() {
     return {
-      // إرسال الـ ID مهم جداً للباك-إند ليعرف أي دواء يقوم بتحديثه (UPSERT)
       'id': id,
       'name': name,
       'active_ingredient': activeIngredient,
-      'dosage_frequency': dosage, // 4. الاعتماد على النص الحر الذي يكتبه المريض
+      'dosage_frequency': dosage,
       'weekdays': weekdays,
-      'times': [DateFormat('HH:mm:ss').format(time)],
+      // Convert each DateTime back to "HH:mm:ss" string for the backend
+      'times': times.map((dt) => DateFormat('HH:mm:ss').format(dt)).toList(),
       'is_primary': isPrimary,
-      'ai_instruction':
-          aiInstruction, // إرسالها مرة أخرى كي لا تضيع عند التحديث
+      'ai_instruction': aiInstruction,
     };
   }
 
+  // ── CopyWith ─────────────────────────────────────────────────────────────────
   Medication copyWith({
     String? id,
     String? name,
     String? activeIngredient,
     String? dosage,
-    DateTime? time,
+    List<DateTime>? times,
     String? frequency,
     bool? isPrimary,
     List<String>? weekdays,
-    String? aiInstruction, // 5. التحديث هنا
+    String? aiInstruction,
   }) {
     return Medication(
       id: id ?? this.id,
       name: name ?? this.name,
       activeIngredient: activeIngredient ?? this.activeIngredient,
       dosage: dosage ?? this.dosage,
-      time: time ?? this.time,
+      times: times ?? this.times,
       frequency: frequency ?? this.frequency,
       isPrimary: isPrimary ?? this.isPrimary,
       weekdays: weekdays ?? this.weekdays,
-      aiInstruction:
-          aiInstruction ?? this.aiInstruction, // تمرير القيمة الجديدة
+      aiInstruction: aiInstruction ?? this.aiInstruction,
     );
   }
 
   @override
-  // 6. إضافة الحقل للمقارنة
   List<Object?> get props => [
         id,
         name,
         activeIngredient,
         dosage,
-        time,
+        times,
         frequency,
         isPrimary,
         weekdays,
-        aiInstruction
+        aiInstruction,
       ];
 }

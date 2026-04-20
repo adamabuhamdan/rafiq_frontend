@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import '../../../../models/medication_model.dart';
 import '../../../services/pharmacy_service.dart';
 import '../../auth/providers/auth_provider.dart';
@@ -6,7 +7,7 @@ import '../../dashboard/providers/dashboard_provider.dart';
 
 // State class
 class PharmacyState {
-  final List<Medication> medications; // temporary list being built
+  final List<Medication> medications;
   final bool isLoading;
   final String? error;
 
@@ -49,20 +50,21 @@ class PharmacyNotifier extends StateNotifier<PharmacyState> {
     }
   }
 
-  // Add a new empty medication (for manual entry)
+  /// Add a new empty medication (manual entry) with a default 08:00 alarm.
   void addNewMedication() {
+    final defaultTime = DateTime(0, 0, 0, 8, 0);
     final newMed = Medication(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       name: '',
       activeIngredient: '',
       dosage: '',
-      time: DateTime.now(),
+      times: [defaultTime],
       frequency: 'daily',
     );
     state = state.copyWith(medications: [...state.medications, newMed]);
   }
 
-  // Update a specific medication at index
+  /// Update a specific medication at index.
   void updateMedication(int index, Medication updatedMed) {
     if (index < 0 || index >= state.medications.length) return;
     final updatedList = List<Medication>.from(state.medications);
@@ -70,7 +72,16 @@ class PharmacyNotifier extends StateNotifier<PharmacyState> {
     state = state.copyWith(medications: updatedList);
   }
 
-  // Remove a medication at index
+  /// Update only the times list for a specific medication (called by alarm UI).
+  void updateMedicationTimes(int index, List<DateTime> newTimes) {
+    if (index < 0 || index >= state.medications.length) return;
+    final sorted = List<DateTime>.from(newTimes)..sort((a, b) => a.hour != b.hour ? a.hour.compareTo(b.hour) : a.minute.compareTo(b.minute));
+    final updatedList = List<Medication>.from(state.medications);
+    updatedList[index] = updatedList[index].copyWith(times: sorted);
+    state = state.copyWith(medications: updatedList);
+  }
+
+  /// Remove a medication at index.
   void removeMedication(int index) {
     if (index < 0 || index >= state.medications.length) return;
     final updatedList = List<Medication>.from(state.medications);
@@ -78,25 +89,25 @@ class PharmacyNotifier extends StateNotifier<PharmacyState> {
     state = state.copyWith(medications: updatedList);
   }
 
-  // Use real AI scan from Backend
+  /// Use real AI scan from Backend.
   Future<void> scanPrescription(String base64Image) async {
     if (_patientId == null) return;
     state = state.copyWith(isLoading: true);
     try {
       final result = await _pharmacyService.scanPrescription(_patientId!, base64Image);
       final extractedList = result['extracted'] as List<dynamic>;
-      
+
       final List<Medication> newMeds = extractedList.map((medData) {
         return Medication(
           id: DateTime.now().microsecondsSinceEpoch.toString() + extractedList.indexOf(medData).toString(),
           name: medData['name'] ?? '',
           activeIngredient: medData['active_ingredient'] ?? '',
-          dosage: '', // critical for medical safety, the user must input this
-          time: DateTime.now(),
-          frequency: '', 
+          dosage: '',
+          times: [DateTime(0, 0, 0, 8, 0)],
+          frequency: '',
         );
       }).toList();
-      
+
       state = state.copyWith(
         medications: [...state.medications, ...newMeds],
         isLoading: false,
@@ -106,7 +117,7 @@ class PharmacyNotifier extends StateNotifier<PharmacyState> {
     }
   }
 
-  // Persist medications to DB
+  /// Persist medications to DB.
   Future<void> saveMedications() async {
     if (_patientId == null || state.medications.isEmpty) return;
     state = state.copyWith(isLoading: true);
@@ -118,35 +129,33 @@ class PharmacyNotifier extends StateNotifier<PharmacyState> {
     }
   }
 
-  // Clear all medications (after saving)
-  void clearMedications() {
-    state = const PharmacyState();
-  }
-
-  // Set loading state explicitly
-  void setLoading(bool loading) {
-    state = state.copyWith(isLoading: loading);
-  }
-
-  // Suggest Smart Schedule
+  /// Suggest Smart Schedule via AI.
   Future<List<Medication>?> suggestSchedule() async {
     if (_patientId == null || state.medications.isEmpty) return null;
     state = state.copyWith(isLoading: true);
     try {
       final response = await _pharmacyService.suggestSchedule(_patientId!, state.medications);
       final suggestionsRaw = response['suggestions'] as List<dynamic>;
-      
+
       final List<Medication> optimizedMeds = suggestionsRaw.map((s) {
         final med = Medication.fromJson(s as Map<String, dynamic>);
         return med.copyWith(id: DateTime.now().microsecondsSinceEpoch.toString() + suggestionsRaw.indexOf(s).toString());
       }).toList();
-      
+
       state = state.copyWith(isLoading: false);
       return optimizedMeds;
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
       rethrow;
     }
+  }
+
+  void clearMedications() {
+    state = const PharmacyState();
+  }
+
+  void setLoading(bool loading) {
+    state = state.copyWith(isLoading: loading);
   }
 }
 

@@ -6,7 +6,7 @@ import '../../../models/medication_model.dart';
 import '../providers/dashboard_provider.dart';
 import '../../chat/screens/chat_screen.dart';
 import '../../pharmacy/screens/pharmacy_main_screen.dart';
-import '../../settings/screens/setpage_screen.dart'; // ✅ إضافة شاشة الإعدادات
+import '../../settings/screens/setpage_screen.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'daily_report_screen.dart';
 
@@ -20,7 +20,6 @@ class DashboardScreen extends ConsumerStatefulWidget {
 class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   int _selectedIndex = 0;
 
-  // ✅ تحديث المصفوفة لتشمل 4 شاشات
   static const List<Widget> _screens = [
     DashboardContent(),
     ChatScreen(),
@@ -39,7 +38,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     return Scaffold(
       body: Stack(
         children: [
-          // Subtle background texture/gradient if desired
           Container(color: AppColors.background),
           _screens[_selectedIndex],
         ],
@@ -94,7 +92,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 }
 
-// ------------------ باقي الكود بدون تغيير (DashboardContent) ------------------
+// ─────────────────────────────── DashboardContent ────────────────────────────
+
 class DashboardContent extends ConsumerWidget {
   const DashboardContent({super.key});
 
@@ -108,7 +107,8 @@ class DashboardContent extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final nextDose = ref.watch(nextDoseProvider);
-    final todayMedsAsync = ref.watch(dashboardMedicationsProvider);
+    final todayDoses = ref.watch(todayDosesProvider);
+    final medsAsync = ref.watch(dashboardMedicationsProvider);
     final patientNameAsync = ref.watch(patientNameProvider);
     final todayReportAsync = ref.watch(todayReportProvider);
 
@@ -151,7 +151,7 @@ class DashboardContent extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header
+              // ── Header ──────────────────────────────────────────────────────
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -207,50 +207,52 @@ class DashboardContent extends ConsumerWidget {
               ),
               const SizedBox(height: 32),
 
-              // Next Dose Card
-              if (nextDose != null)
-                _buildNextDoseCard(context, nextDose)
-              else
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                          color: Colors.black.withOpacity(0.05),
-                          blurRadius: 10,
-                          offset: const Offset(0, 4)),
-                    ],
-                  ),
-                  child: Center(
-                      child: Text(tr('dashboard.no_medications'),
-                          style: const TextStyle(fontWeight: FontWeight.w600))),
-                ),
-
+              // ── Next Dose Card ───────────────────────────────────────────────
+              medsAsync.when(
+                data: (meds) => meds.isEmpty
+                    ? _buildNoDoseCard(context)
+                    : (nextDose != null
+                        ? _buildNextDoseCard(context, nextDose)
+                        : _buildNoDoseCard(context)),
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (_, __) => _buildNoDoseCard(context),
+              ),
               const SizedBox(height: 32),
 
-              // Today's Schedule
+              // ── Today's Chronological Timeline ───────────────────────────────
               Text(
                 tr('dashboard.today_schedule'),
-                style:
-                    const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 16),
-              todayMedsAsync.when(
-                data: (todayMeds) => ListView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: todayMeds.length,
-                  itemBuilder: (context, index) =>
-                      _buildMedicationTile(todayMeds[index]),
-                ),
+
+              medsAsync.when(
+                data: (meds) {
+                  if (meds.isEmpty) {
+                    return Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: Text(
+                          tr('dashboard.no_medications'),
+                          style: TextStyle(
+                              color: AppColors.primary.withOpacity(0.5),
+                              fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                    );
+                  }
+                  if (todayDoses.isEmpty) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  return _buildTimeline(context, todayDoses);
+                },
                 loading: () => const Center(child: CircularProgressIndicator()),
-                error: (err, stack) => Text('Error: $err'),
+                error: (err, _) => Text('Error: $err'),
               ),
+
               const SizedBox(height: 32),
 
-              // AI Advice Card
+              // ── AI Advice Card ────────────────────────────────────────────────
               todayReportAsync.when(
                 data: (report) {
                   if (report != null && report['ai_advice'] != null) {
@@ -262,8 +264,7 @@ class DashboardContent extends ConsumerWidget {
                 error: (_, __) => const SizedBox.shrink(),
               ),
 
-              const SizedBox(
-                  height: 100), // مساحة للزر العائم حتى لا يغطي المحتوى
+              const SizedBox(height: 100),
             ],
           ),
         ),
@@ -271,14 +272,37 @@ class DashboardContent extends ConsumerWidget {
     );
   }
 
-  Widget _buildNextDoseCard(BuildContext context, Medication nextDose) {
+  // ── No Medications Card ────────────────────────────────────────────────────
+  Widget _buildNoDoseCard(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 4)),
+        ],
+      ),
+      child: Center(
+          child: Text(tr('dashboard.no_medications'),
+              style: const TextStyle(fontWeight: FontWeight.w600))),
+    );
+  }
+
+  // ── Next Dose Card (uses DoseEntry) ────────────────────────────────────────
+  Widget _buildNextDoseCard(BuildContext context, DoseEntry nextDose) {
+    final timeLabel = TimeOfDay(
+            hour: nextDose.time.hour, minute: nextDose.time.minute)
+        .format(context);
+    final medNames = nextDose.medications.map((m) => m.name).join(' & ');
+
     return Container(
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [
-            AppColors.primary,
-            Color(0xFF2C2C2C), // Slightly lighter black
-          ],
+          colors: [AppColors.primary, Color(0xFF2C2C2C)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -312,39 +336,36 @@ class DashboardContent extends ConsumerWidget {
                         color: Colors.white.withOpacity(0.2),
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: const Icon(Icons.alarm,
-                          color: Colors.white, size: 20),
+                      child: const Icon(Icons.alarm, color: Colors.white, size: 20),
                     ),
                     const SizedBox(width: 12),
                     Text(
                       tr('dashboard.next_dose'),
                       style: const TextStyle(
-                        color: Colors.white70,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
+                          color: Colors.white70, fontSize: 16, fontWeight: FontWeight.w600),
                     ),
                   ],
                 ),
                 const SizedBox(height: 24),
                 Text(
-                  nextDose.name,
+                  medNames,
                   style: const TextStyle(
                     color: Colors.white,
-                    fontSize: 28,
+                    fontSize: 24,
                     fontWeight: FontWeight.bold,
                     letterSpacing: -0.5,
                   ),
                 ),
-                const SizedBox(height: 6),
-                Text(
-                  '${nextDose.dosage}  •  ${nextDose.frequency}',
-                  style: const TextStyle(color: Colors.white70, fontSize: 15),
-                ),
+                if (nextDose.medications.length == 1) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    nextDose.medications.first.dosage,
+                    style: const TextStyle(color: Colors.white70, fontSize: 15),
+                  ),
+                ],
                 const SizedBox(height: 20),
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                   decoration: BoxDecoration(
                     color: AppColors.highlight.withOpacity(0.9),
                     borderRadius: BorderRadius.circular(16),
@@ -356,12 +377,11 @@ class DashboardContent extends ConsumerWidget {
                           color: Colors.white, size: 18),
                       const SizedBox(width: 8),
                       Text(
-                        DateFormat('h:mm a').format(nextDose.time),
+                        timeLabel,
                         style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold),
                       ),
                     ],
                   ),
@@ -374,59 +394,196 @@ class DashboardContent extends ConsumerWidget {
     );
   }
 
-  Widget _buildMedicationTile(Medication med) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: const Border(
-            left: BorderSide(color: AppColors.highlight, width: 4)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-        leading: Container(
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            color: AppColors.secondary.withOpacity(0.3),
-            borderRadius: BorderRadius.circular(14),
-          ),
-          child: const Icon(Icons.medication_liquid, color: AppColors.primary),
-        ),
-        title: Text(
-          med.name,
-          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17),
-        ),
-        subtitle: Padding(
-          padding: const EdgeInsets.only(top: 4.0),
-          child: Text('${med.dosage} • ${med.frequency}',
-              style: TextStyle(color: Colors.grey.shade600)),
-        ),
-        trailing: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          decoration: BoxDecoration(
-            color: AppColors.background,
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Text(
-            DateFormat('h:mm a').format(med.time),
-            style: const TextStyle(
-              fontWeight: FontWeight.w600,
-              color: AppColors.primary,
+  // ── Chronological Timeline ─────────────────────────────────────────────────
+  Widget _buildTimeline(BuildContext context, List<DoseEntry> doses) {
+    return ListView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: doses.length,
+      itemBuilder: (context, index) {
+        final dose = doses[index];
+        final isLast = index == doses.length - 1;
+        return _buildTimelineEntry(context, dose, isLast);
+      },
+    );
+  }
+
+  Widget _buildTimelineEntry(BuildContext context, DoseEntry dose, bool isLast) {
+    final timeLabel = TimeOfDay(hour: dose.time.hour, minute: dose.time.minute)
+        .format(context);
+    final now = DateTime.now();
+    final currentMinutes = now.hour * 60 + now.minute;
+    final doseMinutes = dose.time.hour * 60 + dose.time.minute;
+    final isPast = doseMinutes < currentMinutes;
+
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ── Timeline spine ─────────────────────────────────────────────────
+          SizedBox(
+            width: 72,
+            child: Column(
+              children: [
+                Text(
+                  timeLabel,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: isPast ? Colors.grey.shade400 : AppColors.primary,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 6),
+                Container(
+                  width: 12,
+                  height: 12,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: isPast ? Colors.grey.shade300 : AppColors.highlight,
+                    border: Border.all(
+                      color: isPast ? Colors.grey.shade300 : AppColors.highlight,
+                      width: 2,
+                    ),
+                  ),
+                ),
+                if (!isLast)
+                  Expanded(
+                    child: Container(
+                      width: 2,
+                      color: Colors.grey.shade200,
+                      margin: const EdgeInsets.symmetric(vertical: 4),
+                    ),
+                  ),
+              ],
             ),
           ),
-        ),
+
+          const SizedBox(width: 12),
+
+          // ── Dose card ──────────────────────────────────────────────────────
+          Expanded(
+            child: Padding(
+              padding: EdgeInsets.only(bottom: isLast ? 0 : 16),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border(
+                    left: BorderSide(
+                      color: isPast ? Colors.grey.shade200 : AppColors.highlight,
+                      width: 3,
+                    ),
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.04),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: dose.medications.map((med) {
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 10),
+                        child: _buildMedicationInDose(med, isPast),
+                      );
+                    }).toList(),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
 
+  Widget _buildMedicationInDose(Medication med, bool isPast) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: isPast
+                    ? Colors.grey.shade100
+                    : AppColors.secondary.withOpacity(0.3),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(
+                Icons.medication_liquid,
+                color: isPast ? Colors.grey.shade400 : AppColors.primary,
+                size: 18,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    med.name,
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                      color: isPast ? Colors.grey.shade500 : Colors.black87,
+                    ),
+                  ),
+                  if (med.dosage.isNotEmpty)
+                    Text(
+                      med.dosage,
+                      style: TextStyle(
+                          fontSize: 13, color: Colors.grey.shade600),
+                    ),
+                ],
+              ),
+            ),
+            if (isPast)
+              Icon(Icons.check_circle, color: Colors.grey.shade300, size: 20),
+          ],
+        ),
+        // AI Instruction chip
+        if (med.aiInstruction != null && med.aiInstruction!.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: AppColors.accent.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: AppColors.accent.withOpacity(0.4)),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.tips_and_updates_outlined,
+                    size: 14, color: AppColors.highlight),
+                const SizedBox(width: 6),
+                Flexible(
+                  child: Text(
+                    med.aiInstruction!,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: AppColors.primary.withOpacity(0.8),
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  // ── AI Advice Card ────────────────────────────────────────────────────────
   Widget _buildAiAdviceCard(String advice) {
     return Container(
       decoration: BoxDecoration(
@@ -447,8 +604,7 @@ class DashboardContent extends ConsumerWidget {
                   color: AppColors.highlight,
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child:
-                    const Icon(Icons.psychology, color: Colors.white, size: 20),
+                child: const Icon(Icons.psychology, color: Colors.white, size: 20),
               ),
               const SizedBox(width: 12),
               Text(
@@ -465,9 +621,9 @@ class DashboardContent extends ConsumerWidget {
           MarkdownBody(
             data: advice,
             styleSheet: MarkdownStyleSheet(
-              p: const TextStyle(
-                  fontSize: 15, height: 1.6, color: Colors.black87),
-              listBullet: const TextStyle(fontSize: 15, color: Colors.black87),
+              p: const TextStyle(fontSize: 15, height: 1.6, color: Colors.black87),
+              listBullet:
+                  const TextStyle(fontSize: 15, color: Colors.black87),
               strong: const TextStyle(
                   fontWeight: FontWeight.bold, color: AppColors.primary),
             ),
