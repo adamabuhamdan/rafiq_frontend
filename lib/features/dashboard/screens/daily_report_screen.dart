@@ -196,7 +196,7 @@ class _DailyReportScreenState extends ConsumerState<DailyReportScreen> {
               _buildSectionTitle(
                   tr('daily_report.routine_meds'), Icons.medication_rounded),
               _buildModernCard(
-                color: const Color(0xFFF3F8FF),
+                color: AppColors.secondary.withOpacity(0.05),
                 accentColor: AppColors.secondary,
                 child: Column(
                   children: [
@@ -224,7 +224,7 @@ class _DailyReportScreenState extends ConsumerState<DailyReportScreen> {
                 _buildSectionTitle(
                     tr('daily_report.sugar_readings'), Icons.water_drop_rounded),
                 _buildModernCard(
-                  color: const Color(0xFFFFF4F0),
+                  color: Colors.orange.withOpacity(0.05),
                   accentColor: Colors.orange.shade100,
                   child: Padding(
                     padding: const EdgeInsets.symmetric(vertical: 8.0),
@@ -243,7 +243,7 @@ class _DailyReportScreenState extends ConsumerState<DailyReportScreen> {
                 _buildSectionTitle(
                     tr('daily_report.blood_pressure'), Icons.monitor_heart_rounded),
                 _buildModernCard(
-                  color: const Color(0xFFF4F0FF),
+                  color: AppColors.highlight.withOpacity(0.05),
                   accentColor: AppColors.highlight.withOpacity(0.1),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(vertical: 8.0),
@@ -331,7 +331,7 @@ class _DailyReportScreenState extends ConsumerState<DailyReportScreen> {
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(20),
                         gradient: const LinearGradient(
-                          colors: [AppColors.highlight, Color(0xFF8E44AD)],
+                          colors: [AppColors.highlight, AppColors.secondary],
                           begin: Alignment.centerLeft,
                           end: Alignment.centerRight,
                         ),

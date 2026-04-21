@@ -111,6 +111,7 @@ class DashboardContent extends ConsumerWidget {
     final medsAsync = ref.watch(dashboardMedicationsProvider);
     final patientNameAsync = ref.watch(patientNameProvider);
     final todayReportAsync = ref.watch(todayReportProvider);
+    final todayLogsAsync = ref.watch(todayLogsProvider);
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -242,7 +243,8 @@ class DashboardContent extends ConsumerWidget {
                     );
                   }
                   // Return grouped medication cards directly instead of timeline doses
-                  return _buildMedicationsList(context, meds);
+                  final takenDoses = todayLogsAsync.value ?? [];
+                  return _buildMedicationsList(context, ref, meds, takenDoses);
                 },
                 loading: () => const Center(child: CircularProgressIndicator()),
                 error: (err, _) => Text('Error: $err'),
@@ -393,19 +395,19 @@ class DashboardContent extends ConsumerWidget {
   }
 
   // ── Medications List (Grouped Cards) ───────────────────────────────────────
-  Widget _buildMedicationsList(BuildContext context, List<Medication> meds) {
+  Widget _buildMedicationsList(BuildContext context, WidgetRef ref, List<Medication> meds, List<dynamic> takenDoses) {
     return ListView.separated(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       itemCount: meds.length,
       separatorBuilder: (context, index) => const SizedBox(height: 16),
       itemBuilder: (context, index) {
-        return _buildMedicationCard(context, meds[index]);
+        return _buildMedicationCard(context, ref, meds[index], takenDoses);
       },
     );
   }
 
-  Widget _buildMedicationCard(BuildContext context, Medication med) {
+  Widget _buildMedicationCard(BuildContext context, WidgetRef ref, Medication med, List<dynamic> takenDoses) {
     final isArabic = context.locale.languageCode == 'ar';
     return Container(
       decoration: BoxDecoration(
@@ -517,38 +519,103 @@ class DashboardContent extends ConsumerWidget {
               runSpacing: 10,
               children: med.times.map((dt) {
                 final timeLabel = TimeOfDay(hour: dt.hour, minute: dt.minute).format(context);
+                final timeString = "${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}:00";
+
+                final isTaken = takenDoses.any((log) => 
+                  log['medication_id'] == med.id && 
+                  log['scheduled_time'] != null && 
+                  log['scheduled_time'].toString().contains(timeString)
+                );
+
                 final now = DateTime.now();
                 final currentMinutes = now.hour * 60 + now.minute;
                 final doseMinutes = dt.hour * 60 + dt.minute;
-                final isPast = doseMinutes < currentMinutes;
+                
+                final isMissed = doseMinutes < currentMinutes && !isTaken;
 
-                return Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: isPast ? Colors.grey.shade100 : AppColors.highlight.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: isPast ? Colors.grey.shade300 : AppColors.highlight.withOpacity(0.3),
+                return InkWell(
+                  onTap: () {
+                    showDialog(
+                      context: context,
+                      builder: (context) => AlertDialog(
+                        title: Text(isArabic ? 'تأكيد أخذ الجرعة' : 'Confirm Dose'),
+                        content: Text(isArabic ? 'هل أنت متأكد من أخذ هذه الجرعة؟' : 'Confirm taking this dose?'),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(context),
+                            child: Text(isArabic ? 'إلغاء' : 'Cancel'),
+                          ),
+                          ElevatedButton(
+                            onPressed: () async {
+                              Navigator.pop(context); // Close dialog
+                              final timeString = "${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}:00";
+                              
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text(isArabic ? 'جاري تسجيل الجرعة...' : 'Logging dose...')),
+                              );
+
+                              try {
+                                final service = ref.read(pharmacyServiceProvider);
+                                await service.logMedicationDose(med.id, timeString);
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(isArabic ? 'تم تسجيل الجرعة بنجاح' : 'Dose logged successfully!'),
+                                      backgroundColor: Colors.green,
+                                    ),
+                                  );
+                                }
+                              } catch (e) {
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+                                  );
+                                }
+                              }
+                            },
+                            child: Text(isArabic ? 'تأكيد' : 'Confirm'),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                  borderRadius: BorderRadius.circular(20),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: isTaken 
+                          ? Colors.green.withOpacity(0.1) 
+                          : isMissed 
+                              ? Colors.red.withOpacity(0.1) 
+                              : AppColors.highlight.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: isTaken 
+                            ? Colors.green.withOpacity(0.5) 
+                            : isMissed 
+                                ? Colors.red.withOpacity(0.5) 
+                                : AppColors.highlight.withOpacity(0.3),
+                      ),
                     ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.access_time,
-                        size: 16,
-                        color: isPast ? Colors.grey.shade500 : AppColors.highlight,
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        timeLabel,
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          color: isPast ? Colors.grey.shade500 : AppColors.primary,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          isTaken ? Icons.check_circle : (isMissed ? Icons.warning : Icons.access_time),
+                          size: 16,
+                          color: isTaken ? Colors.green : (isMissed ? Colors.red : AppColors.highlight),
                         ),
-                      ),
-                    ],
+                        const SizedBox(width: 6),
+                        Text(
+                          timeLabel,
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: isTaken ? Colors.green : (isMissed ? Colors.red : AppColors.primary),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 );
               }).toList(),

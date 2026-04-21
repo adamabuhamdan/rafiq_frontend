@@ -35,8 +35,11 @@ class _AiScheduleScreenState extends ConsumerState<AiScheduleScreen> {
       setState(() {
         final newTimes = List<DateTime>.from(adjustedMeds[medIndex].times);
         newTimes[alarmIndex] = DateTime(0, 0, 0, picked.hour, picked.minute);
-        newTimes.sort((a, b) => a.hour != b.hour ? a.hour.compareTo(b.hour) : a.minute.compareTo(b.minute));
-        adjustedMeds[medIndex] = adjustedMeds[medIndex].copyWith(times: newTimes);
+        newTimes.sort((a, b) => a.hour != b.hour
+            ? a.hour.compareTo(b.hour)
+            : a.minute.compareTo(b.minute));
+        adjustedMeds[medIndex] =
+            adjustedMeds[medIndex].copyWith(times: newTimes);
       });
     }
   }
@@ -44,18 +47,26 @@ class _AiScheduleScreenState extends ConsumerState<AiScheduleScreen> {
   void _deleteAlarm(int medIndex, int alarmIndex) {
     if (adjustedMeds[medIndex].times.length <= 1) return;
     setState(() {
-      final newTimes = List<DateTime>.from(adjustedMeds[medIndex].times)..removeAt(alarmIndex);
+      final newTimes = List<DateTime>.from(adjustedMeds[medIndex].times)
+        ..removeAt(alarmIndex);
       adjustedMeds[medIndex] = adjustedMeds[medIndex].copyWith(times: newTimes);
     });
   }
 
   Future<void> _addAlarm(int medIndex) async {
-    final picked = await showTimePicker(context: context, initialTime: TimeOfDay.now());
+    final picked =
+        await showTimePicker(context: context, initialTime: TimeOfDay.now());
     if (picked != null) {
       setState(() {
-        final newTimes = [...adjustedMeds[medIndex].times, DateTime(0, 0, 0, picked.hour, picked.minute)];
-        newTimes.sort((a, b) => a.hour != b.hour ? a.hour.compareTo(b.hour) : a.minute.compareTo(b.minute));
-        adjustedMeds[medIndex] = adjustedMeds[medIndex].copyWith(times: newTimes);
+        final newTimes = [
+          ...adjustedMeds[medIndex].times,
+          DateTime(0, 0, 0, picked.hour, picked.minute)
+        ];
+        newTimes.sort((a, b) => a.hour != b.hour
+            ? a.hour.compareTo(b.hour)
+            : a.minute.compareTo(b.minute));
+        adjustedMeds[medIndex] =
+            adjustedMeds[medIndex].copyWith(times: newTimes);
       });
     }
   }
@@ -72,7 +83,9 @@ class _AiScheduleScreenState extends ConsumerState<AiScheduleScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text(
-            isArabic ? 'تم حفظ الجدول بنجاح ✓' : 'Schedule saved successfully ✓',
+            isArabic
+                ? 'تم حفظ الجدول بنجاح ✓'
+                : 'Schedule saved successfully ✓',
             style: const TextStyle(fontWeight: FontWeight.bold),
           ),
           backgroundColor: AppColors.primary,
@@ -93,7 +106,6 @@ class _AiScheduleScreenState extends ConsumerState<AiScheduleScreen> {
       }
     }
   }
-
 
   // ── Build ──────────────────────────────────────────────────────────────────
 
@@ -117,7 +129,12 @@ class _AiScheduleScreenState extends ConsumerState<AiScheduleScreen> {
               color: AppColors.accent.withOpacity(0.4),
               borderRadius: BorderRadius.circular(20),
               border: Border.all(color: AppColors.accent),
-              boxShadow: [BoxShadow(color: AppColors.highlight.withOpacity(0.1), blurRadius: 10, offset: const Offset(0, 4))],
+              boxShadow: [
+                BoxShadow(
+                    color: AppColors.highlight.withOpacity(0.1),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4))
+              ],
             ),
             child: Stack(
               clipBehavior: Clip.none,
@@ -127,22 +144,39 @@ class _AiScheduleScreenState extends ConsumerState<AiScheduleScreen> {
                   left: isArabic ? null : 20,
                   right: isArabic ? 20 : null,
                   child: Container(
-                    decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white, boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 8)]),
-                    child: const CircleAvatar(backgroundColor: AppColors.highlight, radius: 20, child: Icon(Icons.auto_awesome, color: Colors.white, size: 20)),
+                    decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.white,
+                        boxShadow: [
+                          BoxShadow(
+                              color: Colors.black.withOpacity(0.1),
+                              blurRadius: 8)
+                        ]),
+                    child: const CircleAvatar(
+                        backgroundColor: AppColors.highlight,
+                        radius: 20,
+                        child: Icon(Icons.auto_awesome,
+                            color: Colors.white, size: 20)),
                   ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.only(top: 28, left: 20, right: 20, bottom: 20),
+                  padding: const EdgeInsets.only(
+                      top: 28, left: 20, right: 20, bottom: 20),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(tr('pharmacy.ai_explanation'), style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 18, color: AppColors.primary)),
+                      Text(tr('pharmacy.ai_explanation'),
+                          style: const TextStyle(
+                              fontWeight: FontWeight.w800,
+                              fontSize: 18,
+                              color: AppColors.primary)),
                       const SizedBox(height: 12),
                       Text(
                         isArabic
                             ? 'بناءً على حالتك الطبية وأوقات نومك، قمت بتوزيع مواعيد الأدوية لتناسب روتينك وتتجنب التداخلات. راجع المنبهات أدناه وعدّلها إن أردت.'
                             : 'Based on your medical history and sleep schedule, I\'ve distributed your medication times to fit your routine and avoid interactions. Review and adjust below.',
-                        style: const TextStyle(fontSize: 15, height: 1.5, color: Colors.black87),
+                        style: const TextStyle(
+                            fontSize: 15, height: 1.5, color: Colors.black87),
                       ),
                     ],
                   ),
@@ -156,7 +190,8 @@ class _AiScheduleScreenState extends ConsumerState<AiScheduleScreen> {
             child: ListView.builder(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               itemCount: adjustedMeds.length,
-              itemBuilder: (context, medIndex) => _buildMedCard(context, medIndex, isArabic),
+              itemBuilder: (context, medIndex) =>
+                  _buildMedCard(context, medIndex, isArabic),
             ),
           ),
 
@@ -166,21 +201,36 @@ class _AiScheduleScreenState extends ConsumerState<AiScheduleScreen> {
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
                 color: Colors.white,
-                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 20, offset: const Offset(0, -5))],
-                borderRadius: const BorderRadius.only(topLeft: Radius.circular(32), topRight: Radius.circular(32)),
+                boxShadow: [
+                  BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 20,
+                      offset: const Offset(0, -5))
+                ],
+                borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(32),
+                    topRight: Radius.circular(32)),
               ),
               child: ElevatedButton.icon(
                 onPressed: isSaving ? null : _confirmAndSave,
-                icon: isSaving ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Icon(Icons.check_circle_outline),
+                icon: isSaving
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2, color: Colors.white))
+                    : const Icon(Icons.check_circle_outline),
                 label: Text(
                   isArabic ? 'تأكيد وحفظ الجدول' : 'Confirm & Save Schedule',
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                      fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   foregroundColor: Colors.white,
                   minimumSize: const Size(double.infinity, 60),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20)),
                   elevation: 8,
                   shadowColor: AppColors.primary.withOpacity(0.4),
                 ),
@@ -205,8 +255,16 @@ class _AiScheduleScreenState extends ConsumerState<AiScheduleScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border(left: BorderSide(color: timesChanged ? AppColors.highlight : Colors.transparent, width: 4)),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 4))],
+        border: Border(
+            left: BorderSide(
+                color: timesChanged ? AppColors.highlight : Colors.transparent,
+                width: 4)),
+        boxShadow: [
+          BoxShadow(
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 10,
+              offset: const Offset(0, 4))
+        ],
       ),
       child: Padding(
         padding: const EdgeInsets.all(20),
@@ -222,17 +280,28 @@ class _AiScheduleScreenState extends ConsumerState<AiScheduleScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(med.name, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                      Text(med.name,
+                          style: const TextStyle(
+                              fontSize: 18, fontWeight: FontWeight.bold)),
                       if (med.dosage.isNotEmpty)
-                        Text(med.dosage, style: TextStyle(fontSize: 13, color: Colors.grey.shade600)),
+                        Text(med.dosage,
+                            style: TextStyle(
+                                fontSize: 13, color: Colors.grey.shade600)),
                     ],
                   ),
                 ),
                 if (timesChanged)
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(color: AppColors.highlight.withOpacity(0.15), borderRadius: BorderRadius.circular(8)),
-                    child: Text(isArabic ? 'معدَّل' : 'Modified', style: TextStyle(fontSize: 11, color: AppColors.highlight, fontWeight: FontWeight.bold)),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                        color: AppColors.highlight.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(8)),
+                    child: Text(isArabic ? 'معدَّل' : 'Modified',
+                        style: const TextStyle(
+                            fontSize: 11,
+                            color: AppColors.highlight,
+                            fontWeight: FontWeight.bold)),
                   ),
               ],
             ),
@@ -250,9 +319,14 @@ class _AiScheduleScreenState extends ConsumerState<AiScheduleScreen> {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(Icons.tips_and_updates_outlined, size: 16, color: AppColors.highlight),
+                    const Icon(Icons.tips_and_updates_outlined,
+                        size: 16, color: AppColors.highlight),
                     const SizedBox(width: 8),
-                    Expanded(child: Text(med.aiInstruction!, style: TextStyle(fontSize: 13, color: AppColors.primary.withOpacity(0.85)))),
+                    Expanded(
+                        child: Text(med.aiInstruction!,
+                            style: TextStyle(
+                                fontSize: 13,
+                                color: AppColors.primary.withOpacity(0.85)))),
                   ],
                 ),
               ),
@@ -266,8 +340,14 @@ class _AiScheduleScreenState extends ConsumerState<AiScheduleScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(isArabic ? 'المنبهات (${med.times.length})' : 'Alarms (${med.times.length})',
-                    style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: AppColors.primary)),
+                Text(
+                    isArabic
+                        ? 'المنبهات (${med.times.length})'
+                        : 'Alarms (${med.times.length})',
+                    style: const TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 14,
+                        color: AppColors.primary)),
               ],
             ),
             const SizedBox(height: 10),
@@ -275,8 +355,10 @@ class _AiScheduleScreenState extends ConsumerState<AiScheduleScreen> {
             // Alarm rows
             ...List.generate(med.times.length, (alarmIndex) {
               final dt = med.times[alarmIndex];
-              final label = TimeOfDay(hour: dt.hour, minute: dt.minute).format(context);
-              return _buildAlarmRow(medIndex, alarmIndex, label, isArabic, canDelete: med.times.length > 1);
+              final label =
+                  TimeOfDay(hour: dt.hour, minute: dt.minute).format(context);
+              return _buildAlarmRow(medIndex, alarmIndex, label, isArabic,
+                  canDelete: med.times.length > 1);
             }),
 
             // Add alarm
@@ -292,7 +374,9 @@ class _AiScheduleScreenState extends ConsumerState<AiScheduleScreen> {
     );
   }
 
-  Widget _buildAlarmRow(int medIndex, int alarmIndex, String label, bool isArabic, {required bool canDelete}) {
+  Widget _buildAlarmRow(
+      int medIndex, int alarmIndex, String label, bool isArabic,
+      {required bool canDelete}) {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
@@ -304,17 +388,30 @@ class _AiScheduleScreenState extends ConsumerState<AiScheduleScreen> {
         dense: true,
         leading: Container(
           padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(color: AppColors.highlight.withOpacity(0.15), shape: BoxShape.circle),
+          decoration: BoxDecoration(
+              color: AppColors.highlight.withOpacity(0.15),
+              shape: BoxShape.circle),
           child: const Icon(Icons.alarm, color: AppColors.highlight, size: 16),
         ),
         title: Text('${isArabic ? 'منبه' : 'Alarm'} ${alarmIndex + 1}',
             style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
-        subtitle: Text(label, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.primary)),
+        subtitle: Text(label,
+            style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+                color: AppColors.primary)),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            IconButton(icon: const Icon(Icons.edit_outlined, size: 18, color: AppColors.primary), onPressed: () => _editAlarm(medIndex, alarmIndex)),
-            if (canDelete) IconButton(icon: const Icon(Icons.delete_outline, size: 18, color: Colors.redAccent), onPressed: () => _deleteAlarm(medIndex, alarmIndex)),
+            IconButton(
+                icon: const Icon(Icons.edit_outlined,
+                    size: 18, color: AppColors.primary),
+                onPressed: () => _editAlarm(medIndex, alarmIndex)),
+            if (canDelete)
+              IconButton(
+                  icon: const Icon(Icons.delete_outline,
+                      size: 18, color: Colors.redAccent),
+                  onPressed: () => _deleteAlarm(medIndex, alarmIndex)),
           ],
         ),
         onTap: () => _editAlarm(medIndex, alarmIndex),

@@ -1,5 +1,4 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 import '../../../../models/medication_model.dart';
 import '../../../services/pharmacy_service.dart';
 import '../../auth/providers/auth_provider.dart';
@@ -35,7 +34,8 @@ class PharmacyNotifier extends StateNotifier<PharmacyState> {
   final PharmacyService _pharmacyService;
   final String? _patientId;
 
-  PharmacyNotifier(this._pharmacyService, this._patientId) : super(const PharmacyState()) {
+  PharmacyNotifier(this._pharmacyService, this._patientId)
+      : super(const PharmacyState()) {
     loadMedications();
   }
 
@@ -75,7 +75,10 @@ class PharmacyNotifier extends StateNotifier<PharmacyState> {
   /// Update only the times list for a specific medication (called by alarm UI).
   void updateMedicationTimes(int index, List<DateTime> newTimes) {
     if (index < 0 || index >= state.medications.length) return;
-    final sorted = List<DateTime>.from(newTimes)..sort((a, b) => a.hour != b.hour ? a.hour.compareTo(b.hour) : a.minute.compareTo(b.minute));
+    final sorted = List<DateTime>.from(newTimes)
+      ..sort((a, b) => a.hour != b.hour
+          ? a.hour.compareTo(b.hour)
+          : a.minute.compareTo(b.minute));
     final updatedList = List<Medication>.from(state.medications);
     updatedList[index] = updatedList[index].copyWith(times: sorted);
     state = state.copyWith(medications: updatedList);
@@ -94,12 +97,14 @@ class PharmacyNotifier extends StateNotifier<PharmacyState> {
     if (_patientId == null) return;
     state = state.copyWith(isLoading: true);
     try {
-      final result = await _pharmacyService.scanPrescription(_patientId!, base64Image);
+      final result =
+          await _pharmacyService.scanPrescription(_patientId!, base64Image);
       final extractedList = result['extracted'] as List<dynamic>;
 
       final List<Medication> newMeds = extractedList.map((medData) {
         return Medication(
-          id: DateTime.now().microsecondsSinceEpoch.toString() + extractedList.indexOf(medData).toString(),
+          id: DateTime.now().microsecondsSinceEpoch.toString() +
+              extractedList.indexOf(medData).toString(),
           name: medData['name'] ?? '',
           activeIngredient: medData['active_ingredient'] ?? '',
           dosage: '',
@@ -134,13 +139,16 @@ class PharmacyNotifier extends StateNotifier<PharmacyState> {
     if (_patientId == null || state.medications.isEmpty) return null;
     state = state.copyWith(isLoading: true);
     try {
-      final response = await _pharmacyService.suggestSchedule(_patientId!, state.medications);
+      final response = await _pharmacyService.suggestSchedule(
+          _patientId!, state.medications);
       final suggestionsRaw = response['suggestions'] as List<dynamic>;
 
       final List<Medication> optimizedMeds = suggestionsRaw.map((s) {
         final med = Medication.fromJson(s as Map<String, dynamic>);
         return med.id.isEmpty
-            ? med.copyWith(id: DateTime.now().microsecondsSinceEpoch.toString() + suggestionsRaw.indexOf(s).toString())
+            ? med.copyWith(
+                id: DateTime.now().microsecondsSinceEpoch.toString() +
+                    suggestionsRaw.indexOf(s).toString())
             : med;
       }).toList();
 
@@ -166,7 +174,6 @@ class PharmacyNotifier extends StateNotifier<PharmacyState> {
     }
   }
 
-
   void clearMedications() {
     state = const PharmacyState();
   }
@@ -177,7 +184,8 @@ class PharmacyNotifier extends StateNotifier<PharmacyState> {
 }
 
 // Provider
-final pharmacyProvider = StateNotifierProvider<PharmacyNotifier, PharmacyState>((ref) {
+final pharmacyProvider =
+    StateNotifierProvider<PharmacyNotifier, PharmacyState>((ref) {
   final pharmacyService = ref.watch(pharmacyServiceProvider);
   final authState = ref.watch(authProvider);
   return PharmacyNotifier(pharmacyService, authState.userId);

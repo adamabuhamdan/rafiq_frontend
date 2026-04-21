@@ -40,6 +40,20 @@ final dashboardMedicationsProvider = FutureProvider<List<Medication>>((ref) asyn
   return await pharmacyService.getMedications(authState.userId!);
 });
 
+/// Fetches today's taken medication logs from the backend.
+final todayLogsProvider = FutureProvider<List<dynamic>>((ref) async {
+  final authState = ref.watch(authProvider);
+  if (!authState.isAuthenticated || authState.userId == null) return [];
+
+  final apiClient = ref.watch(apiClientProvider);
+  try {
+    final response = await apiClient.get('/pharmacy/logs/today/${authState.userId}');
+    return response.data as List<dynamic>;
+  } catch (e) {
+    return [];
+  }
+});
+
 /// Flattens all medications × their individual times into a chronological list.
 /// Each DoseEntry groups all meds that share the same hour:minute.
 final todayDosesProvider = Provider<List<DoseEntry>>((ref) {

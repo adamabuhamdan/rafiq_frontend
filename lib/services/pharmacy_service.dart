@@ -72,4 +72,12 @@ class PharmacyService {
     });
     return response.data;
   }
+
+  Future<void> logMedicationDose(
+      String medicationId, String scheduledTime) async {
+    await _apiClient.post('/pharmacy/log-dose', data: {
+      'medication_id': medicationId,
+      'scheduled_time': scheduledTime,
+    });
+  }
 }

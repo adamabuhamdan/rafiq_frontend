@@ -72,7 +72,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
             style: const TextStyle(
                 color: Colors.white, fontWeight: FontWeight.bold)),
         centerTitle: true,
-        backgroundColor: const Color(0xFF000000),
+        backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
       ),
       body: Column(
@@ -105,8 +105,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
         : (isArabic ? Alignment.centerRight : Alignment.centerLeft);
 
     final bubbleColor = isUser
-        ? const Color.fromARGB(255, 220, 193, 255)
-        : const Color.fromARGB(255, 197, 238, 255);
+        ? AppColors.secondary.withOpacity(0.15)
+        : AppColors.highlight.withOpacity(0.1);
     const textColor = AppColors.primary;
 
     return Padding(
@@ -123,7 +123,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
-                      color: const Color(0xFFBFE9FF).withOpacity(0.5),
+                      color: AppColors.secondary.withOpacity(0.3),
                       blurRadius: 8),
                 ],
               ),
@@ -143,8 +143,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
                 gradient: isUser
                     ? const LinearGradient(
                         colors: [
-                          Color(0xFFC294FF),
-                          Color.fromARGB(255, 220, 193, 255)
+                          AppColors.secondary,
+                          AppColors.accent,
                         ],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
@@ -211,7 +211,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
                 radius: 16,
                 backgroundColor: AppColors.primary,
                 child: Icon(Icons.person,
-                    size: 18, color: Color.fromARGB(255, 220, 193, 255)),
+                    size: 18, color: AppColors.accent),
               ),
             ),
           ],
