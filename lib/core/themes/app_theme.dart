@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
 
 class AppColors {
-  static const primary = Color.fromARGB(237, 0, 0, 0); // Black
-  static const secondary = Color(0xFFB5E2FA); // Light Blue
-  static const background = Color(0xFFF9F7F3); // Off-white
-  static const accent = Color(0xFF87CEEB); // Sky Blue
-  static const highlight = Color.fromRGBO(172, 114, 247, 1); // purple
+  static const primary = Color(0xDF000000);
+  static const secondary = Color.fromARGB(255, 0, 158, 105);
+  static const background = Color(0xFFF9F7F3);
+  static const accent = Color.fromARGB(255, 0, 219, 146);
+  static const highlight = Color(0xFF004AAD);
 }
 
 class AppTheme {
@@ -16,7 +16,7 @@ class AppTheme {
       brightness: Brightness.light,
       primaryColor: AppColors.primary,
       scaffoldBackgroundColor: AppColors.background,
-      fontFamily: isArabic ? 'Cairo' : 'Poppins', // you can add custom fonts
+      fontFamily: isArabic ? 'Cairo' : 'Poppins',
       appBarTheme: const AppBarTheme(
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
