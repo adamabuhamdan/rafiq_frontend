@@ -8,6 +8,7 @@ class AuthState {
   final bool isOtpSent;
   final bool isAuthenticated;
   final String? userId;
+  final bool isInitializing;
 
   AuthState({
     this.isLoading = false,
@@ -15,6 +16,7 @@ class AuthState {
     this.isOtpSent = false,
     this.isAuthenticated = false,
     this.userId,
+    this.isInitializing = true,
   });
 
   AuthState copyWith({
@@ -23,6 +25,7 @@ class AuthState {
     bool? isOtpSent,
     bool? isAuthenticated,
     String? userId,
+    bool? isInitializing,
   }) {
     return AuthState(
       isLoading: isLoading ?? this.isLoading,
@@ -30,6 +33,7 @@ class AuthState {
       isOtpSent: isOtpSent ?? this.isOtpSent,
       isAuthenticated: isAuthenticated ?? this.isAuthenticated,
       userId: userId ?? this.userId,
+      isInitializing: isInitializing ?? this.isInitializing,
     );
   }
 }
@@ -42,9 +46,16 @@ class AuthNotifier extends StateNotifier<AuthState> {
   }
 
   Future<void> _checkInitialAuth() async {
-    final userId = await _authService.getLoggedUserId();
-    if (userId != null) {
-      state = state.copyWith(isAuthenticated: true, userId: userId);
+    try {
+      final userId = await _authService.getLoggedUserId();
+      if (userId != null) {
+        state = state.copyWith(
+            isAuthenticated: true, userId: userId, isInitializing: false);
+      } else {
+        state = state.copyWith(isInitializing: false);
+      }
+    } catch (e) {
+      state = state.copyWith(isInitializing: false);
     }
   }
 

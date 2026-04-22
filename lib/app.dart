@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:easy_localization/easy_localization.dart';
-import 'features/dashboard/screens/dashboard_screen.dart';
-import 'features/auth/screens/login_screen.dart';
+import 'features/auth/screens/splash_screen.dart';
 import 'features/auth/providers/auth_provider.dart';
 import 'core/themes/app_theme.dart';
 
@@ -20,7 +19,7 @@ class MyApp extends ConsumerWidget {
       locale: context.locale,
       theme: AppTheme.lightTheme(context),
       debugShowCheckedModeBanner: false,
-      home: authState.isAuthenticated ? const DashboardScreen() : const LoginScreen(),
+      home: const SplashScreen(),
     );
   }
 }

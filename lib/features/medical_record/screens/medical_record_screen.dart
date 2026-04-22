@@ -5,8 +5,12 @@ import '../../../core/themes/app_theme.dart';
 import '../../../models/patient_model.dart';
 import '../providers/patient_provider.dart';
 
+import '../../dashboard/screens/dashboard_screen.dart';
+
 class MedicalProfileScreen extends ConsumerStatefulWidget {
-  const MedicalProfileScreen({super.key});
+  final bool isOnboarding;
+  
+  const MedicalProfileScreen({super.key, this.isOnboarding = false});
 
   @override
   ConsumerState<MedicalProfileScreen> createState() =>
@@ -106,7 +110,14 @@ class _MedicalProfileScreenState extends ConsumerState<MedicalProfileScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(tr('profile.save_success'))),
         );
-        Navigator.pop(context);
+        if (widget.isOnboarding) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const DashboardScreen()),
+          );
+        } else {
+          Navigator.pop(context);
+        }
       }
     }
   }

@@ -45,14 +45,18 @@ class _PharmacyMainScreenState extends ConsumerState<PharmacyMainScreen> {
     }
 
     for (int i = 0; i < meds.length; i++) {
-      if (nameControllers[i].text != meds[i].name)
+      if (nameControllers[i].text != meds[i].name) {
         nameControllers[i].text = meds[i].name;
-      if (ingredientControllers[i].text != meds[i].activeIngredient)
+      }
+      if (ingredientControllers[i].text != meds[i].activeIngredient) {
         ingredientControllers[i].text = meds[i].activeIngredient;
-      if (dosageControllers[i].text != meds[i].dosage)
+      }
+      if (dosageControllers[i].text != meds[i].dosage) {
         dosageControllers[i].text = meds[i].dosage;
-      if (meds[i].weekdays.isNotEmpty)
+      }
+      if (meds[i].weekdays.isNotEmpty) {
         weekdaysList[i] = List.from(meds[i].weekdays);
+      }
     }
   }
 
@@ -414,10 +418,11 @@ class _PharmacyMainScreenState extends ConsumerState<PharmacyMainScreen> {
                             ],
                           ),
                         );
-                        if (confirm == true)
+                        if (confirm == true) {
                           ref
                               .read(pharmacyProvider.notifier)
                               .removeMedication(index);
+                        }
                       },
                     ),
                   ),

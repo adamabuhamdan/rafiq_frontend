@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:easy_localization/easy_localization.dart';
 import '../providers/auth_provider.dart';
 import '../../../core/themes/app_theme.dart';
-import '../../dashboard/screens/dashboard_screen.dart';
+import '../../medical_record/screens/medical_record_screen.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -30,7 +30,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         if (mounted) {
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (_) => const DashboardScreen()),
+            MaterialPageRoute(builder: (_) => const MedicalProfileScreen(isOnboarding: true)),
           );
         }
       }
