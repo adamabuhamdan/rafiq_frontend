@@ -18,6 +18,7 @@ class Patient extends Equatable {
   final String sleepTime; // Backend uses HH:mm:ss
   final String medicalDescription;
   final String? lastTestResults;
+  final String? lastTestPdfUrl;
 
   const Patient({
     required this.id,
@@ -30,6 +31,7 @@ class Patient extends Equatable {
     required this.sleepTime,
     required this.medicalDescription,
     this.lastTestResults,
+    this.lastTestPdfUrl,
   });
 
   factory Patient.fromJson(Map<String, dynamic> json) {
@@ -47,6 +49,7 @@ class Patient extends Equatable {
       sleepTime: json['sleep_time'] ?? '22:00:00',
       medicalDescription: json['medical_description'] ?? '',
       lastTestResults: json['last_test_results'],
+      lastTestPdfUrl: json['last_test_pdf_url'],
     );
   }
 
@@ -61,6 +64,7 @@ class Patient extends Equatable {
       'sleep_time': sleepTime,
       'medical_description': medicalDescription,
       'last_test_results': lastTestResults,
+      'last_test_pdf_url': lastTestPdfUrl,
     };
   }
 
@@ -75,6 +79,7 @@ class Patient extends Equatable {
     String? sleepTime,
     String? medicalDescription,
     String? lastTestResults,
+    String? lastTestPdfUrl,
   }) {
     return Patient(
       id: id ?? this.id,
@@ -87,6 +92,7 @@ class Patient extends Equatable {
       sleepTime: sleepTime ?? this.sleepTime,
       medicalDescription: medicalDescription ?? this.medicalDescription,
       lastTestResults: lastTestResults ?? this.lastTestResults,
+      lastTestPdfUrl: lastTestPdfUrl ?? this.lastTestPdfUrl,
     );
   }
 
@@ -102,5 +108,6 @@ class Patient extends Equatable {
         sleepTime,
         medicalDescription,
         lastTestResults,
+        lastTestPdfUrl,
       ];
 }

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/themes/app_theme.dart';
 import '../../dashboard/screens/dashboard_screen.dart';
 import '../providers/auth_provider.dart';
+import '../../medical_record/providers/patient_provider.dart';
 import 'login_screen.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
@@ -18,6 +19,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   late AnimationController _controller;
   late Animation<double> _scaleAnimation;
   late Animation<double> _opacityAnimation;
+  bool _isNavigating = false;
 
   @override
   void initState() {
@@ -51,6 +53,44 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     super.dispose();
   }
 
+  Future<void> _verifyAndNavigate() async {
+    if (_isNavigating) return;
+    _isNavigating = true;
+
+    final authState = ref.read(authProvider);
+
+    if (authState.isAuthenticated) {
+      try {
+        // Verify token by fetching patient data
+        final patientService = ref.read(patientServiceProvider);
+        await patientService.getPatient(authState.userId!);
+        
+        if (mounted) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const DashboardScreen()),
+          );
+        }
+      } catch (e) {
+        // Token invalid or user deleted on backend -> Logout
+        await ref.read(authProvider.notifier).logout();
+        if (mounted) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const LoginScreen()),
+          );
+        }
+      }
+    } else {
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const LoginScreen()),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
@@ -58,19 +98,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     // Navigation logic: Wait for animation to finish AND auth provider to finish initializing
     if (_animationFinished && !authState.isInitializing) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (authState.isAuthenticated) {
-          // Scenario 2: Logged in -> Dashboard
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (_) => const DashboardScreen()),
-          );
-        } else {
-          // Scenario 1: Not logged in -> Auth Screen
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (_) => const LoginScreen()),
-          );
-        }
+        _verifyAndNavigate();
       });
     }
 

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:file_picker/file_picker.dart';
 import '../../../core/themes/app_theme.dart';
 import '../../../models/patient_model.dart';
 import '../providers/patient_provider.dart';
@@ -9,7 +10,7 @@ import '../../dashboard/screens/dashboard_screen.dart';
 
 class MedicalProfileScreen extends ConsumerStatefulWidget {
   final bool isOnboarding;
-  
+
   const MedicalProfileScreen({super.key, this.isOnboarding = false});
 
   @override
@@ -34,6 +35,7 @@ class _MedicalProfileScreenState extends ConsumerState<MedicalProfileScreen> {
   bool _notificationsEnabled = true;
   bool _missedDoseAlert = true;
   bool _weeklyReport = true;
+  String? _lastTestPdfUrl;
 
   @override
   void initState() {
@@ -61,6 +63,7 @@ class _MedicalProfileScreenState extends ConsumerState<MedicalProfileScreen> {
           _wakeTime = patient.wakeTime;
           _sleepTime = patient.sleepTime;
           _selectedDiseases = List.from(patient.diseases);
+          _lastTestPdfUrl = patient.lastTestPdfUrl;
         });
       }
     });
@@ -102,6 +105,7 @@ class _MedicalProfileScreenState extends ConsumerState<MedicalProfileScreen> {
         lastTestResults: _testResultsController.text.trim().isEmpty
             ? null
             : _testResultsController.text.trim(),
+        lastTestPdfUrl: _lastTestPdfUrl,
       );
 
       final success =
@@ -129,9 +133,33 @@ class _MedicalProfileScreenState extends ConsumerState<MedicalProfileScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(tr('profile.title')),
-        backgroundColor: AppColors.primary,
+        title: Text(tr('profile.title'),
+            style: const TextStyle(fontWeight: FontWeight.bold)),
+        centerTitle: true,
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [AppColors.highlight, AppColors.secondary],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        ),
+        backgroundColor: Colors.transparent,
         foregroundColor: Colors.white,
+        elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.language),
+            onPressed: () {
+              if (context.locale.languageCode == 'ar') {
+                context.setLocale(const Locale('en'));
+              } else {
+                context.setLocale(const Locale('ar'));
+              }
+            },
+          ),
+        ],
       ),
       body: state.isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -148,14 +176,31 @@ class _MedicalProfileScreenState extends ConsumerState<MedicalProfileScreen> {
                         padding: const EdgeInsets.all(4),
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          border:
-                              Border.all(color: AppColors.highlight, width: 3),
+                          gradient: const LinearGradient(
+                            colors: [AppColors.secondary, AppColors.accent],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.secondary.withValues(alpha: 0.3),
+                              blurRadius: 20,
+                              spreadRadius: 2,
+                              offset: const Offset(0, 8),
+                            ),
+                          ],
                         ),
-                        child: CircleAvatar(
-                          radius: 50,
-                          backgroundColor: AppColors.secondary.withOpacity(0.5),
-                          child: const Icon(Icons.person,
-                              size: 60, color: AppColors.primary),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.white, width: 4),
+                          ),
+                          child: const CircleAvatar(
+                            radius: 46,
+                            backgroundColor: Colors.transparent,
+                            child: Icon(Icons.person,
+                                size: 50, color: Colors.white),
+                          ),
                         ),
                       ),
                     ),
@@ -210,6 +255,8 @@ class _MedicalProfileScreenState extends ConsumerState<MedicalProfileScreen> {
                           label: tr('profile.last_test_results'),
                           maxLines: 2,
                         ),
+                        const SizedBox(height: 12),
+                        _buildPdfUploadButton(),
                       ],
                     ),
                     const SizedBox(height: 24),
@@ -276,9 +323,15 @@ class _MedicalProfileScreenState extends ConsumerState<MedicalProfileScreen> {
                     const SizedBox(height: 32),
                     Container(
                       decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(20),
+                        gradient: const LinearGradient(
+                          colors: [AppColors.highlight, AppColors.secondary],
+                          begin: Alignment.centerLeft,
+                          end: Alignment.centerRight,
+                        ),
                         boxShadow: [
                           BoxShadow(
-                            color: AppColors.primary.withOpacity(0.2),
+                            color: AppColors.highlight.withValues(alpha: 0.3),
                             blurRadius: 15,
                             offset: const Offset(0, 8),
                           ),
@@ -287,14 +340,17 @@ class _MedicalProfileScreenState extends ConsumerState<MedicalProfileScreen> {
                       child: ElevatedButton(
                         onPressed: _saveProfile,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
+                          backgroundColor: Colors.transparent,
+                          shadowColor: Colors.transparent,
                           minimumSize: const Size(double.infinity, 56),
                           shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(20)),
                         ),
                         child: Text(tr('profile.save'),
                             style: const TextStyle(
-                                fontSize: 20, fontWeight: FontWeight.w600)),
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white)),
                       ),
                     ),
                     const SizedBox(height: 32),
@@ -328,12 +384,23 @@ class _MedicalProfileScreenState extends ConsumerState<MedicalProfileScreen> {
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(8),
+                padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: AppColors.secondary.withOpacity(0.3),
-                  borderRadius: BorderRadius.circular(12),
+                  gradient: const LinearGradient(
+                    colors: [AppColors.secondary, AppColors.accent],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(14),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.secondary.withValues(alpha: 0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
                 ),
-                child: Icon(icon, color: AppColors.primary, size: 24),
+                child: Icon(icon, color: Colors.white, size: 24),
               ),
               const SizedBox(width: 12),
               Text(
@@ -430,7 +497,7 @@ class _MedicalProfileScreenState extends ConsumerState<MedicalProfileScreen> {
       ],
       onChanged: (v) => setState(() => _selectedGender = v),
       validator: (v) => v == null ? tr('profile.required') : null,
-      style: const TextStyle(fontSize: 18),
+      style: const TextStyle(fontSize: 18, color: Colors.black),
     );
   }
 
@@ -499,7 +566,7 @@ class _MedicalProfileScreenState extends ConsumerState<MedicalProfileScreen> {
             });
           },
           backgroundColor: AppColors.background,
-          selectedColor: AppColors.secondary,
+          selectedColor: AppColors.accent,
           shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12), side: BorderSide.none),
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -508,6 +575,63 @@ class _MedicalProfileScreenState extends ConsumerState<MedicalProfileScreen> {
               fontWeight: isSelected ? FontWeight.bold : FontWeight.normal),
         );
       }).toList(),
+    );
+  }
+
+  Widget _buildPdfUploadButton() {
+    return InkWell(
+      onTap: () async {
+        FilePickerResult? result = await FilePicker.pickFiles(
+          type: FileType.custom,
+          allowedExtensions: ['pdf'],
+        );
+
+        if (result != null) {
+          setState(() {
+            _lastTestPdfUrl = result.files.single.path;
+          });
+        }
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        decoration: BoxDecoration(
+          color: AppColors.background,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppColors.highlight.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child:
+                  const Icon(Icons.picture_as_pdf, color: AppColors.highlight),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                _lastTestPdfUrl != null
+                    ? _lastTestPdfUrl!.split('/').last.split('\\').last
+                    : tr('profile.upload_pdf'),
+                style: const TextStyle(fontSize: 16, color: Colors.black54),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            if (_lastTestPdfUrl != null)
+              IconButton(
+                icon: const Icon(Icons.close, size: 20),
+                onPressed: () {
+                  setState(() {
+                    _lastTestPdfUrl = null;
+                  });
+                },
+              )
+          ],
+        ),
+      ),
     );
   }
 }

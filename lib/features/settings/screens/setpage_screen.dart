@@ -4,6 +4,9 @@ import 'package:easy_localization/easy_localization.dart';
 import '../../../core/themes/app_theme.dart';
 import '../providers/settings_provider.dart';
 import '../../medical_record/screens/medical_record_screen.dart';
+import '../../auth/providers/auth_provider.dart';
+import '../../auth/screens/login_screen.dart';
+import '../../medical_record/providers/patient_provider.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -46,8 +49,21 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final settingsState = ref.watch(settingsProvider);
+    final authState = ref.watch(authProvider);
+    final patientState = ref.watch(patientProvider);
     final isArabic = context.locale.languageCode == 'ar';
-    const userEmail = "ahmed@example.com"; // TODO: get from auth
+
+    if (!authState.isInitializing && !authState.isAuthenticated) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (_) => const LoginScreen()),
+          (route) => false,
+        );
+      });
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
+    final userEmail = patientState.patient?.email ?? "";
 
     // مزامنة القيم المحملة مع الـ Controllers
     if (settingsState.familyEmail != _familyEmailController.text &&
@@ -368,9 +384,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             child: Text(tr('settings.cancel')),
           ),
           TextButton(
-            onPressed: () {
-              // TODO: Clear auth token and navigate to login
+            onPressed: () async {
               Navigator.pop(ctx);
+              await ref.read(authProvider.notifier).logout();
+              if (context.mounted) {
+                Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(builder: (_) => const LoginScreen()),
+                  (route) => false,
+                );
+              }
             },
             style: TextButton.styleFrom(foregroundColor: Colors.red),
             child: Text(tr('settings.logout')),

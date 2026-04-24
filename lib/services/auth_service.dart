@@ -25,8 +25,14 @@ class AuthService {
   }
 
   Future<void> logout() async {
-    await _storage.delete(key: 'access_token');
-    await _storage.delete(key: 'user_id');
+    try {
+      await _apiClient.post('/settings/logout');
+    } catch (e) {
+      // Log error or handle it if necessary, but proceed with local logout
+    } finally {
+      await _storage.delete(key: 'access_token');
+      await _storage.delete(key: 'user_id');
+    }
   }
 
   Future<String?> getLoggedUserId() async {
