@@ -5,7 +5,7 @@ import 'package:file_picker/file_picker.dart';
 import '../../../core/themes/app_theme.dart';
 import '../../../models/patient_model.dart';
 import '../providers/patient_provider.dart';
-
+import '../../settings/providers/settings_provider.dart';
 import '../../dashboard/screens/dashboard_screen.dart';
 
 class MedicalProfileScreen extends ConsumerStatefulWidget {
@@ -108,19 +108,36 @@ class _MedicalProfileScreenState extends ConsumerState<MedicalProfileScreen> {
         lastTestPdfUrl: _lastTestPdfUrl,
       );
 
+      // 1. حفظ بيانات السجل الطبي أولاً
       final success =
           await ref.read(patientProvider.notifier).saveProfile(updatedPatient);
-      if (success && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(tr('profile.save_success'))),
-        );
-        if (widget.isOnboarding) {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (_) => const DashboardScreen()),
+
+      if (success) {
+        // 2. تمرير وحفظ إيميلات العائلة والطبيب والإشعارات في جدول الـ Settings
+        ref.read(settingsProvider.notifier).updateSetting(
+              familyEmail: _familyEmailController.text.trim().isEmpty
+                  ? null
+                  : _familyEmailController.text.trim(),
+              doctorEmail: _doctorEmailController.text.trim().isEmpty
+                  ? null
+                  : _doctorEmailController.text.trim(),
+              notificationsEnabled: _notificationsEnabled,
+              missedDoseAlertEnabled: _missedDoseAlert,
+              weeklyReportEnabled: _weeklyReport,
+            );
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(tr('profile.save_success'))),
           );
-        } else {
-          Navigator.pop(context);
+          if (widget.isOnboarding) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (_) => const DashboardScreen()),
+            );
+          } else {
+            Navigator.pop(context);
+          }
         }
       }
     }

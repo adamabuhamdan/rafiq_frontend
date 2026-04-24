@@ -9,8 +9,8 @@ class ApiClient {
   ApiClient()
       : _dio = Dio(BaseOptions(
           baseUrl: Env.apiBaseUrl,
-          connectTimeout: const Duration(seconds: 60),
-          receiveTimeout: const Duration(seconds: 60),
+          connectTimeout: const Duration(seconds: 120),
+          receiveTimeout: const Duration(seconds: 120),
         )) {
     _dio.interceptors.add(InterceptorsWrapper(
       onRequest: (options, handler) async {
@@ -41,7 +41,9 @@ class ApiClient {
 
   // POST wrapper
   Future<Response> post(String path,
-      {dynamic data, Map<String, dynamic>? queryParameters, Duration? timeout}) async {
+      {dynamic data,
+      Map<String, dynamic>? queryParameters,
+      Duration? timeout}) async {
     return await _dio.post(path,
         data: data,
         queryParameters: queryParameters,
@@ -52,7 +54,9 @@ class ApiClient {
 
   // PUT wrapper
   Future<Response> put(String path,
-      {dynamic data, Map<String, dynamic>? queryParameters, Duration? timeout}) async {
+      {dynamic data,
+      Map<String, dynamic>? queryParameters,
+      Duration? timeout}) async {
     return await _dio.put(path,
         data: data,
         queryParameters: queryParameters,
@@ -63,7 +67,9 @@ class ApiClient {
 
   // PATCH wrapper
   Future<Response> patch(String path,
-      {dynamic data, Map<String, dynamic>? queryParameters, Duration? timeout}) async {
+      {dynamic data,
+      Map<String, dynamic>? queryParameters,
+      Duration? timeout}) async {
     return await _dio.patch(path,
         data: data,
         queryParameters: queryParameters,

@@ -723,11 +723,16 @@ class _PharmacyMainScreenState extends ConsumerState<PharmacyMainScreen> {
                             builder: (_) =>
                                 AiScheduleScreen(medications: optimizedMeds)));
                   }
-                } catch (e) {
+                } catch (e, stacktrace) {
+                  // 👈 التعديل الأول هنا
+                  // 👈 التعديل الثاني: إضافة أسطر الطباعة هذه
+                  print('🔴 AI Schedule Error: $e');
+                  print('🔴 Stacktrace: $stacktrace');
+
                   if (mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                       content: Text(isArabic
-                          ? 'حدث خطأ أثناء الاتصال بالذكاء الاصطناعي'
+                          ? 'حدث خطأ: $e' // 👈 التعديل الثالث: عرض الخطأ على الشاشة بدلاً من النص العام
                           : 'Error connecting to AI: $e'),
                       backgroundColor: Colors.redAccent,
                     ));
