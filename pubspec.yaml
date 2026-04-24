@@ -16,8 +16,8 @@ dependencies:
   easy_localization: ^3.0.7
 
   # State Management
-  riverpod: ^2.5.1
-  flutter_riverpod: ^2.5.1
+  riverpod: ^3.2.1
+  flutter_riverpod: ^3.3.1
 
   # Networking
   http: ^1.2.2
@@ -25,7 +25,7 @@ dependencies:
 
   # Image picking & camera
   image_picker: ^1.1.2
-  camera: ^0.10.6
+  camera: ^0.11.2+1
 
   # UI & Helpers
   flutter_svg: ^2.0.10+1
@@ -34,16 +34,16 @@ dependencies:
 
   # Storage
   shared_preferences: ^2.2.3
-  flutter_secure_storage: ^9.0.0
+  flutter_secure_storage: ^10.0.0
   # Navigation
-  go_router: ^14.2.0
+  go_router: ^17.0.0
   flutter_markdown: ^0.7.7+1
   file_picker: ^11.0.2
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^3.0.0
+  flutter_lints: ^6.0.0
 
 flutter:
   uses-material-design: true

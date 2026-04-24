@@ -32,7 +32,9 @@ class DoseEntry {
 // ── Data providers ────────────────────────────────────────────────────────────
 
 /// Fetches all medications from the backend for the authenticated patient.
-final dashboardMedicationsProvider = FutureProvider<List<Medication>>((ref) async {
+final dashboardMedicationsProvider = FutureProvider<List<Medication>>((
+  ref,
+) async {
   final authState = ref.watch(authProvider);
   if (!authState.isAuthenticated || authState.userId == null) return [];
 
@@ -47,7 +49,9 @@ final todayLogsProvider = FutureProvider<List<dynamic>>((ref) async {
 
   final apiClient = ref.watch(apiClientProvider);
   try {
-    final response = await apiClient.get('/pharmacy/logs/today/${authState.userId}');
+    final response = await apiClient.get(
+      '/pharmacy/logs/today/${authState.userId}',
+    );
     return response.data as List<dynamic>;
   } catch (e) {
     return [];
@@ -66,7 +70,8 @@ final todayDosesProvider = Provider<List<DoseEntry>>((ref) {
       for (final med in meds) {
         for (final t in med.times) {
           // Key by HH:mm to group medications at the same minute
-          final key = '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
+          final key =
+              '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
           grouped.putIfAbsent(key, () => []).add(med);
         }
       }
@@ -74,13 +79,21 @@ final todayDosesProvider = Provider<List<DoseEntry>>((ref) {
       // Build sorted DoseEntry list
       final entries = grouped.entries.map((e) {
         final parts = e.key.split(':');
-        final time = DateTime(0, 0, 0, int.parse(parts[0]), int.parse(parts[1]));
+        final time = DateTime(
+          0,
+          0,
+          0,
+          int.parse(parts[0]),
+          int.parse(parts[1]),
+        );
         return DoseEntry(time: time, medications: e.value);
       }).toList();
 
-      entries.sort((a, b) => a.time.hour != b.time.hour
-          ? a.time.hour.compareTo(b.time.hour)
-          : a.time.minute.compareTo(b.time.minute));
+      entries.sort(
+        (a, b) => a.time.hour != b.time.hour
+            ? a.time.hour.compareTo(b.time.hour)
+            : a.time.minute.compareTo(b.time.minute),
+      );
 
       return entries;
     },

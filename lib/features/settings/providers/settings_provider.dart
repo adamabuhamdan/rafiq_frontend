@@ -8,12 +8,6 @@ final settingsServiceProvider = Provider<SettingsService>((ref) {
   return SettingsService(apiClient);
 });
 
-final settingsProvider = StateNotifierProvider<SettingsNotifier, SettingsState>((ref) {
-  final settingsService = ref.watch(settingsServiceProvider);
-  final authState = ref.watch(authProvider);
-  return SettingsNotifier(settingsService, authState.userId);
-});
-
 // Settings state (matches backend SettingsUpdate schema)
 class SettingsState {
   final String? familyEmail;
@@ -66,26 +60,34 @@ class SettingsState {
   }
 }
 
-class SettingsNotifier extends StateNotifier<SettingsState> {
-  final SettingsService _settingsService;
-  final String? _patientId;
+class SettingsNotifier extends Notifier<SettingsState> {
+  SettingsService get _settingsService => ref.read(settingsServiceProvider);
+  String? get _patientId => ref.read(authProvider).userId;
 
-  SettingsNotifier(this._settingsService, this._patientId) : super(SettingsState()) {
-    if (_patientId != null) {
-      loadSettings();
+  @override
+  SettingsState build() {
+    final patientId = ref.watch(authProvider).userId;
+    if (patientId != null) {
+      Future.microtask(() => _loadSettingsFor(patientId));
+    }
+    return SettingsState();
+  }
+
+  Future<void> _loadSettingsFor(String patientId) async {
+    state = state.copyWith(isLoading: true);
+    try {
+      final json = await _settingsService.getSettings(patientId);
+      state = SettingsState.fromJson(json).copyWith(isLoading: false);
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
     }
   }
 
   // Load settings from backend
   Future<void> loadSettings() async {
-    if (_patientId == null) return;
-    state = state.copyWith(isLoading: true);
-    try {
-      final json = await _settingsService.getSettings(_patientId!);
-      state = SettingsState.fromJson(json).copyWith(isLoading: false);
-    } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
-    }
+    final patientId = _patientId;
+    if (patientId == null) return;
+    await _loadSettingsFor(patientId);
   }
 
   // Update a single setting
@@ -96,21 +98,32 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
     bool? missedDoseAlertEnabled,
     bool? weeklyReportEnabled,
   }) async {
-    if (_patientId == null) return;
-    
+    final patientId = _patientId;
+    if (patientId == null) return;
+
     final updateData = <String, dynamic>{};
     if (familyEmail != null) updateData['family_email'] = familyEmail;
     if (doctorEmail != null) updateData['doctor_email'] = doctorEmail;
-    if (notificationsEnabled != null) updateData['notifications_enabled'] = notificationsEnabled;
-    if (missedDoseAlertEnabled != null) updateData['missed_dose_alert_enabled'] = missedDoseAlertEnabled;
-    if (weeklyReportEnabled != null) updateData['weekly_report_enabled'] = weeklyReportEnabled;
+    if (notificationsEnabled != null) {
+      updateData['notifications_enabled'] = notificationsEnabled;
+    }
+    if (missedDoseAlertEnabled != null) {
+      updateData['missed_dose_alert_enabled'] = missedDoseAlertEnabled;
+    }
+    if (weeklyReportEnabled != null) {
+      updateData['weekly_report_enabled'] = weeklyReportEnabled;
+    }
 
     state = state.copyWith(isLoading: true);
     try {
-      final json = await _settingsService.updateSettings(_patientId!, updateData);
+      final json = await _settingsService.updateSettings(patientId, updateData);
       state = SettingsState.fromJson(json).copyWith(isLoading: false);
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
     }
   }
 }
+
+final settingsProvider = NotifierProvider<SettingsNotifier, SettingsState>(
+  SettingsNotifier.new,
+);

@@ -206,7 +206,11 @@ class _MedicalProfileScreenState extends ConsumerState<MedicalProfileScreen> {
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      tr('settings.edit_medical_profile'),
+                      state.patient == null
+                          ? (isArabic
+                              ? 'إنشاء ملف طبي'
+                              : 'Create Medical Profile')
+                          : tr('settings.edit_medical_profile'),
                       style: const TextStyle(
                           fontSize: 22, fontWeight: FontWeight.bold),
                     ),
@@ -453,6 +457,20 @@ class _MedicalProfileScreenState extends ConsumerState<MedicalProfileScreen> {
               DateTime.now().subtract(const Duration(days: 365 * 30)),
           firstDate: DateTime(1900),
           lastDate: DateTime.now(),
+          builder: (context, child) {
+            return Theme(
+              data: ThemeData.light().copyWith(
+                colorScheme: const ColorScheme.light(
+                  primary: AppColors.secondary,
+                  onPrimary: Colors.white,
+                  surface: Colors.white,
+                  onSurface: Colors.black,
+                ),
+                dialogTheme: DialogThemeData(backgroundColor: Colors.white),
+              ),
+              child: child!,
+            );
+          },
         );
         if (picked != null) setState(() => _selectedDob = picked);
       },
@@ -507,15 +525,34 @@ class _MedicalProfileScreenState extends ConsumerState<MedicalProfileScreen> {
       required Function(String) onChanged}) {
     return GestureDetector(
       onTap: () async {
-        final initialTime = selectedTime != null
-            ? TimeOfDay(
-                hour: int.parse(selectedTime.split(':')[0]),
-                minute: int.parse(selectedTime.split(':')[1]))
-            : TimeOfDay.now();
+        TimeOfDay initTime = TimeOfDay.now();
+        if (selectedTime != null && selectedTime.contains(':')) {
+          try {
+            final parts = selectedTime.split(':');
+            initTime = TimeOfDay(
+              hour: int.parse(parts[0]),
+              minute: int.parse(parts[1].replaceAll(RegExp(r'[^0-9]'), '')),
+            );
+          } catch (e) {}
+        }
 
         final picked = await showTimePicker(
           context: context,
-          initialTime: initialTime,
+          initialTime: initTime,
+          builder: (context, child) {
+            return Theme(
+              data: ThemeData.light().copyWith(
+                colorScheme: const ColorScheme.light(
+                  primary: AppColors.secondary,
+                  onPrimary: Colors.white,
+                  surface: Colors.white,
+                  onSurface: Colors.black,
+                ),
+                dialogTheme: DialogThemeData(backgroundColor: Colors.white),
+              ),
+              child: child!,
+            );
+          },
         );
         if (picked != null) {
           final hour = picked.hour.toString().padLeft(2, '0');
@@ -532,7 +569,9 @@ class _MedicalProfileScreenState extends ConsumerState<MedicalProfileScreen> {
             suffixIcon: const Icon(Icons.access_time),
           ),
           controller: TextEditingController(
-            text: selectedTime != null ? selectedTime.substring(0, 5) : '',
+            text: selectedTime != null && selectedTime.length >= 5
+                ? selectedTime.substring(0, 5)
+                : (selectedTime ?? ''),
           ),
           style: const TextStyle(fontSize: 18),
           validator: (v) =>

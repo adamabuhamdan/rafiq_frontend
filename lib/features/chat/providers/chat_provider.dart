@@ -9,25 +9,13 @@ final chatServiceProvider = Provider<ChatService>((ref) {
   return ChatService(apiClient);
 });
 
-final chatProvider = StateNotifierProvider<ChatNotifier, ChatState>((ref) {
-  final chatService = ref.watch(chatServiceProvider);
-  final authState = ref.watch(authProvider);
-  return ChatNotifier(chatService, authState.userId);
-});
-
 class ChatState {
   final List<ChatMessage> messages;
   final bool isLoading;
 
-  const ChatState({
-    this.messages = const [],
-    this.isLoading = false,
-  });
+  const ChatState({this.messages = const [], this.isLoading = false});
 
-  ChatState copyWith({
-    List<ChatMessage>? messages,
-    bool? isLoading,
-  }) {
+  ChatState copyWith({List<ChatMessage>? messages, bool? isLoading}) {
     return ChatState(
       messages: messages ?? this.messages,
       isLoading: isLoading ?? this.isLoading,
@@ -35,43 +23,54 @@ class ChatState {
   }
 }
 
-class ChatNotifier extends StateNotifier<ChatState> {
-  final ChatService _chatService;
-  final String? _patientId;
+class ChatNotifier extends Notifier<ChatState> {
+  ChatService get _chatService => ref.read(chatServiceProvider);
+  String? get _patientId => ref.read(authProvider).userId;
 
-  ChatNotifier(this._chatService, this._patientId) : super(const ChatState()) {
-    if (_patientId != null) {
-      _loadHistory();
+  @override
+  ChatState build() {
+    final patientId = ref.watch(authProvider).userId;
+    if (patientId != null) {
+      Future.microtask(() => _loadHistory(patientId));
     }
+    return const ChatState();
   }
 
-  Future<void> _loadHistory() async {
+  Future<void> _loadHistory(String patientId) async {
     state = state.copyWith(isLoading: true);
     try {
-      final history = await _chatService.getHistory(_patientId!);
+      final history = await _chatService.getHistory(patientId);
       state = state.copyWith(messages: history, isLoading: false);
     } catch (e) {
       state = state.copyWith(isLoading: false);
     }
   }
 
-  Future<void> sendMessage(String text, {String? imageBase64, String language = 'ar'}) async {
-    if (_patientId == null) return;
+  Future<void> sendMessage(
+    String text, {
+    String? imageBase64,
+    String language = 'ar',
+  }) async {
+    final patientId = _patientId;
+    if (patientId == null) return;
 
     // Optimistic UI update
     final userMsg = ChatMessage(
       id: DateTime.now().toIso8601String(),
-      patientId: _patientId!,
+      patientId: patientId,
       role: SenderRole.user,
       text: text,
       sources: const [],
       timestamp: DateTime.now(),
     );
-    state = state.copyWith(messages: [...state.messages, userMsg], isLoading: true);
+    state = state.copyWith(
+      messages: [...state.messages, userMsg],
+      isLoading: true,
+    );
 
     try {
       final response = await _chatService.sendMessage(
-        patientId: _patientId!,
+        patientId: patientId,
         message: text,
         imageBase64: imageBase64,
         language: language,
@@ -79,18 +78,27 @@ class ChatNotifier extends StateNotifier<ChatState> {
 
       final aiMsg = ChatMessage(
         id: DateTime.now().toIso8601String(),
-        patientId: _patientId!,
+        patientId: patientId,
         role: SenderRole.assistant,
         text: response['reply'] ?? '',
         agentUsed: response['agent_used'],
         sources: response['sources'] ?? [],
-        timestamp: DateTime.parse(response['timestamp'] ?? DateTime.now().toIso8601String()),
+        timestamp: DateTime.parse(
+          response['timestamp'] ?? DateTime.now().toIso8601String(),
+        ),
       );
 
-      state = state.copyWith(messages: [...state.messages, aiMsg], isLoading: false);
+      state = state.copyWith(
+        messages: [...state.messages, aiMsg],
+        isLoading: false,
+      );
     } catch (e) {
       state = state.copyWith(isLoading: false);
       // Optional: Add error message to chat or show snackbar
     }
   }
 }
+
+final chatProvider = NotifierProvider<ChatNotifier, ChatState>(
+  ChatNotifier.new,
+);

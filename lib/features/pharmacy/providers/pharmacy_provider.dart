@@ -30,24 +30,33 @@ class PharmacyState {
 }
 
 // Notifier
-class PharmacyNotifier extends StateNotifier<PharmacyState> {
-  final PharmacyService _pharmacyService;
-  final String? _patientId;
+class PharmacyNotifier extends Notifier<PharmacyState> {
+  PharmacyService get _pharmacyService => ref.read(pharmacyServiceProvider);
+  String? get _patientId => ref.read(authProvider).userId;
 
-  PharmacyNotifier(this._pharmacyService, this._patientId)
-      : super(const PharmacyState()) {
-    loadMedications();
+  @override
+  PharmacyState build() {
+    final patientId = ref.watch(authProvider).userId;
+    if (patientId != null) {
+      Future.microtask(() => _loadMedicationsFor(patientId));
+    }
+    return const PharmacyState();
   }
 
-  Future<void> loadMedications() async {
-    if (_patientId == null) return;
+  Future<void> _loadMedicationsFor(String patientId) async {
     state = state.copyWith(isLoading: true);
     try {
-      final meds = await _pharmacyService.getMedications(_patientId!);
+      final meds = await _pharmacyService.getMedications(patientId);
       state = state.copyWith(medications: meds, isLoading: false);
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
     }
+  }
+
+  Future<void> loadMedications() async {
+    final patientId = _patientId;
+    if (patientId == null) return;
+    await _loadMedicationsFor(patientId);
   }
 
   /// Add a new empty medication (manual entry) with a default 08:00 alarm.
@@ -76,9 +85,11 @@ class PharmacyNotifier extends StateNotifier<PharmacyState> {
   void updateMedicationTimes(int index, List<DateTime> newTimes) {
     if (index < 0 || index >= state.medications.length) return;
     final sorted = List<DateTime>.from(newTimes)
-      ..sort((a, b) => a.hour != b.hour
-          ? a.hour.compareTo(b.hour)
-          : a.minute.compareTo(b.minute));
+      ..sort(
+        (a, b) => a.hour != b.hour
+            ? a.hour.compareTo(b.hour)
+            : a.minute.compareTo(b.minute),
+      );
     final updatedList = List<Medication>.from(state.medications);
     updatedList[index] = updatedList[index].copyWith(times: sorted);
     state = state.copyWith(medications: updatedList);
@@ -94,16 +105,21 @@ class PharmacyNotifier extends StateNotifier<PharmacyState> {
 
   /// Use real AI scan from Backend.
   Future<void> scanPrescription(String base64Image) async {
-    if (_patientId == null) return;
+    final patientId = _patientId;
+    if (patientId == null) return;
+
     state = state.copyWith(isLoading: true);
     try {
-      final result =
-          await _pharmacyService.scanPrescription(_patientId!, base64Image);
+      final result = await _pharmacyService.scanPrescription(
+        patientId,
+        base64Image,
+      );
       final extractedList = result['extracted'] as List<dynamic>;
 
       final List<Medication> newMeds = extractedList.map((medData) {
         return Medication(
-          id: DateTime.now().microsecondsSinceEpoch.toString() +
+          id:
+              DateTime.now().microsecondsSinceEpoch.toString() +
               extractedList.indexOf(medData).toString(),
           name: medData['name'] ?? '',
           activeIngredient: medData['active_ingredient'] ?? '',
@@ -124,10 +140,12 @@ class PharmacyNotifier extends StateNotifier<PharmacyState> {
 
   /// Persist medications to DB.
   Future<void> saveMedications() async {
-    if (_patientId == null || state.medications.isEmpty) return;
+    final patientId = _patientId;
+    if (patientId == null || state.medications.isEmpty) return;
+
     state = state.copyWith(isLoading: true);
     try {
-      await _pharmacyService.saveMedications(_patientId!, state.medications);
+      await _pharmacyService.saveMedications(patientId, state.medications);
       state = state.copyWith(medications: [], isLoading: false);
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
@@ -136,19 +154,25 @@ class PharmacyNotifier extends StateNotifier<PharmacyState> {
 
   /// Suggest Smart Schedule via AI.
   Future<List<Medication>?> suggestSchedule() async {
-    if (_patientId == null || state.medications.isEmpty) return null;
+    final patientId = _patientId;
+    if (patientId == null || state.medications.isEmpty) return null;
+
     state = state.copyWith(isLoading: true);
     try {
       final response = await _pharmacyService.suggestSchedule(
-          _patientId!, state.medications);
+        patientId,
+        state.medications,
+      );
       final suggestionsRaw = response['suggestions'] as List<dynamic>;
 
       final List<Medication> optimizedMeds = suggestionsRaw.map((s) {
         final med = Medication.fromJson(s as Map<String, dynamic>);
         return med.id.isEmpty
             ? med.copyWith(
-                id: DateTime.now().microsecondsSinceEpoch.toString() +
-                    suggestionsRaw.indexOf(s).toString())
+                id:
+                    DateTime.now().microsecondsSinceEpoch.toString() +
+                    suggestionsRaw.indexOf(s).toString(),
+              )
             : med;
       }).toList();
 
@@ -163,10 +187,12 @@ class PharmacyNotifier extends StateNotifier<PharmacyState> {
   /// Save a specific list of medications directly (used by AiScheduleScreen).
   /// Bypasses the provider state to avoid ID/length mismatch issues.
   Future<void> replaceAndSave(List<Medication> meds) async {
-    if (_patientId == null || meds.isEmpty) return;
+    final patientId = _patientId;
+    if (patientId == null || meds.isEmpty) return;
+
     state = state.copyWith(isLoading: true);
     try {
-      await _pharmacyService.saveMedications(_patientId!, meds);
+      await _pharmacyService.saveMedications(patientId, meds);
       state = state.copyWith(medications: [], isLoading: false);
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
@@ -184,9 +210,6 @@ class PharmacyNotifier extends StateNotifier<PharmacyState> {
 }
 
 // Provider
-final pharmacyProvider =
-    StateNotifierProvider<PharmacyNotifier, PharmacyState>((ref) {
-  final pharmacyService = ref.watch(pharmacyServiceProvider);
-  final authState = ref.watch(authProvider);
-  return PharmacyNotifier(pharmacyService, authState.userId);
-});
+final pharmacyProvider = NotifierProvider<PharmacyNotifier, PharmacyState>(
+  PharmacyNotifier.new,
+);

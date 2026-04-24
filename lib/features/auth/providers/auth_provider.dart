@@ -38,11 +38,14 @@ class AuthState {
   }
 }
 
-class AuthNotifier extends StateNotifier<AuthState> {
-  final AuthService _authService;
+class AuthNotifier extends Notifier<AuthState> {
+  AuthService get _authService => ref.read(authServiceProvider);
 
-  AuthNotifier(this._authService) : super(AuthState()) {
-    _checkInitialAuth();
+  @override
+  AuthState build() {
+    // تشغيل التحقق المبدئي بعد تهيئة الحالة مباشرة
+    Future.microtask(_checkInitialAuth);
+    return AuthState();
   }
 
   Future<void> _checkInitialAuth() async {
@@ -50,7 +53,10 @@ class AuthNotifier extends StateNotifier<AuthState> {
       final userId = await _authService.getLoggedUserId();
       if (userId != null) {
         state = state.copyWith(
-            isAuthenticated: true, userId: userId, isInitializing: false);
+          isAuthenticated: true,
+          userId: userId,
+          isInitializing: false,
+        );
       } else {
         state = state.copyWith(isInitializing: false);
       }
@@ -94,7 +100,6 @@ final authServiceProvider = Provider<AuthService>((ref) {
   return AuthService(apiClient);
 });
 
-final authProvider = StateNotifierProvider<AuthNotifier, AuthState>((ref) {
-  final authService = ref.watch(authServiceProvider);
-  return AuthNotifier(authService);
-});
+final authProvider = NotifierProvider<AuthNotifier, AuthState>(
+  AuthNotifier.new,
+);
