@@ -4,6 +4,8 @@ import 'package:easy_localization/easy_localization.dart';
 import '../providers/auth_provider.dart';
 import '../../../core/themes/app_theme.dart';
 import '../../medical_record/screens/medical_record_screen.dart';
+import '../../dashboard/screens/dashboard_screen.dart';
+import '../../medical_record/providers/patient_provider.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -27,11 +29,21 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     } else {
       await auth.verifyOtp(_emailController.text.trim(), _otpController.text.trim());
       if (ref.read(authProvider).isAuthenticated) {
+        await ref.read(patientProvider.notifier).loadPatient();
+        
         if (mounted) {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (_) => const MedicalProfileScreen(isOnboarding: true)),
-          );
+          final patientState = ref.read(patientProvider);
+          if (patientState.patient != null) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (_) => const DashboardScreen()),
+            );
+          } else {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (_) => const MedicalProfileScreen(isOnboarding: true)),
+            );
+          }
         }
       }
     }

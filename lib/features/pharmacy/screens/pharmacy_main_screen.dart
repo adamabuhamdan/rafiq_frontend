@@ -251,24 +251,39 @@ class _PharmacyMainScreenState extends ConsumerState<PharmacyMainScreen> {
                 ),
               ),
               Expanded(
-                child: state.medications.isEmpty
-                    ? Center(
-                        child: Text(
-                            isArabic
-                                ? 'لا توجد أدوية. أضف دواءك الأول.'
-                                : 'No medications yet. Add your first one.',
-                            style: TextStyle(
-                                fontSize: 16,
-                                color: AppColors.primary.withOpacity(0.5),
-                                fontWeight: FontWeight.w500),
-                            textAlign: TextAlign.center))
-                    : ListView.builder(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 8),
-                        itemCount: state.medications.length,
-                        itemBuilder: (context, index) =>
-                            _buildMedicationCard(context, index, isArabic),
-                      ),
+                child: RefreshIndicator(
+                  color: AppColors.primary,
+                  backgroundColor: Colors.white,
+                  onRefresh: () async {
+                    await ref.read(pharmacyProvider.notifier).loadMedications();
+                  },
+                  child: state.medications.isEmpty
+                      ? ListView(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          children: [
+                            SizedBox(height: MediaQuery.of(context).size.height * 0.3),
+                            Center(
+                              child: Text(
+                                  isArabic
+                                      ? 'لا توجد أدوية. أضف دواءك الأول.'
+                                      : 'No medications yet. Add your first one.',
+                                  style: TextStyle(
+                                      fontSize: 16,
+                                      color: AppColors.primary.withOpacity(0.5),
+                                      fontWeight: FontWeight.w500),
+                                  textAlign: TextAlign.center),
+                            ),
+                          ],
+                        )
+                      : ListView.builder(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 8),
+                          itemCount: state.medications.length,
+                          itemBuilder: (context, index) =>
+                              _buildMedicationCard(context, index, isArabic),
+                        ),
+                ),
               ),
             ],
           ),
@@ -711,7 +726,7 @@ class _PharmacyMainScreenState extends ConsumerState<PharmacyMainScreen> {
             ),
             const SizedBox(height: 12),
             ElevatedButton.icon(
-              onPressed: () async {
+              onPressed: state.isLoading ? null : () async {
                 try {
                   final optimizedMeds = await ref
                       .read(pharmacyProvider.notifier)
@@ -724,23 +739,30 @@ class _PharmacyMainScreenState extends ConsumerState<PharmacyMainScreen> {
                                 AiScheduleScreen(medications: optimizedMeds)));
                   }
                 } catch (e, stacktrace) {
-                  // 👈 التعديل الأول هنا
-                  // 👈 التعديل الثاني: إضافة أسطر الطباعة هذه
                   print('🔴 AI Schedule Error: $e');
                   print('🔴 Stacktrace: $stacktrace');
 
                   if (mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                       content: Text(isArabic
-                          ? 'حدث خطأ: $e' // 👈 التعديل الثالث: عرض الخطأ على الشاشة بدلاً من النص العام
+                          ? 'حدث خطأ: $e'
                           : 'Error connecting to AI: $e'),
                       backgroundColor: Colors.redAccent,
                     ));
                   }
                 }
               },
-              icon: const Icon(Icons.auto_awesome),
-              label: Text(tr('pharmacy.ai_suggest'),
+              icon: state.isLoading
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2, color: Colors.white))
+                  : const Icon(Icons.auto_awesome),
+              label: Text(
+                  state.isLoading
+                      ? (isArabic ? 'جاري التحليل...' : 'Analyzing...')
+                      : tr('pharmacy.ai_suggest'),
                   style: const TextStyle(
                       fontSize: 18, fontWeight: FontWeight.bold)),
               style: ElevatedButton.styleFrom(

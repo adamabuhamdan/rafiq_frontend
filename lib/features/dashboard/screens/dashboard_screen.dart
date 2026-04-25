@@ -146,12 +146,23 @@ class DashboardContent extends ConsumerWidget {
         ),
       ),
       body: SafeArea(
-        child: SingleChildScrollView(
-          physics: const BouncingScrollPhysics(),
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+        child: RefreshIndicator(
+          color: AppColors.primary,
+          backgroundColor: Colors.white,
+          onRefresh: () async {
+            await Future.wait([
+              ref.refresh(dashboardMedicationsProvider.future),
+              ref.refresh(todayLogsProvider.future),
+              ref.refresh(todayReportProvider.future),
+              ref.refresh(patientNameProvider.future),
+            ]);
+          },
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
               // ── Header ──────────────────────────────────────────────────────
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -268,6 +279,7 @@ class DashboardContent extends ConsumerWidget {
             ],
           ),
         ),
+      ),
       ),
     );
   }

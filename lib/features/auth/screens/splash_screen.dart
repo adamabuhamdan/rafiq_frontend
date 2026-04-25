@@ -4,6 +4,7 @@ import '../../../core/themes/app_theme.dart';
 import '../../dashboard/screens/dashboard_screen.dart';
 import '../providers/auth_provider.dart';
 import '../../medical_record/providers/patient_provider.dart';
+import '../../medical_record/screens/medical_record_screen.dart';
 import 'login_screen.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
@@ -72,13 +73,24 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
           );
         }
       } catch (e) {
-        // Token invalid or user deleted on backend -> Logout
-        await ref.read(authProvider.notifier).logout();
-        if (mounted) {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (_) => const LoginScreen()),
-          );
+        final errorStr = e.toString().toLowerCase();
+        // If it's a 404, it means the user exists but hasn't created a profile yet.
+        if (errorStr.contains('404') || errorStr.contains('not found')) {
+          if (mounted) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (_) => const MedicalProfileScreen(isOnboarding: true)),
+            );
+          }
+        } else {
+          // Token invalid or user deleted on backend -> Logout
+          await ref.read(authProvider.notifier).logout();
+          if (mounted) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (_) => const LoginScreen()),
+            );
+          }
         }
       }
     } else {
