@@ -279,9 +279,16 @@ class _PharmacyMainScreenState extends ConsumerState<PharmacyMainScreen> {
                           physics: const AlwaysScrollableScrollPhysics(),
                           padding: const EdgeInsets.symmetric(
                               horizontal: 16, vertical: 8),
-                          itemCount: state.medications.length,
-                          itemBuilder: (context, index) =>
-                              _buildMedicationCard(context, index, isArabic),
+                          itemCount: state.medications.length + 1,
+                          itemBuilder: (context, index) {
+                            if (index == state.medications.length) {
+                              return Padding(
+                                padding: const EdgeInsets.only(top: 16.0),
+                                child: _buildBottomActions(context, state),
+                              );
+                            }
+                            return _buildMedicationCard(context, index, isArabic);
+                          },
                         ),
                 ),
               ),
@@ -293,9 +300,6 @@ class _PharmacyMainScreenState extends ConsumerState<PharmacyMainScreen> {
                 child: const Center(child: CircularProgressIndicator())),
         ],
       ),
-      bottomNavigationBar: state.medications.isEmpty
-          ? null
-          : _buildBottomActions(context, state),
     );
   }
 
@@ -606,44 +610,50 @@ class _PharmacyMainScreenState extends ConsumerState<PharmacyMainScreen> {
         ? ['ح', 'ن', 'ث', 'ر', 'خ', 'ج', 'س']
         : ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
     final dbDays = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: List.generate(7, (dayIndex) {
-        final dbDay = dbDays[dayIndex];
-        final isSelected = weekdaysList[index].contains(dbDay);
-        return GestureDetector(
-          onTap: () {
-            setState(() {
-              if (isSelected) {
-                weekdaysList[index].remove(dbDay);
-              } else {
-                weekdaysList[index].add(dbDay);
-              }
-            });
-            _updateMedicationFromForm(index);
-          },
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            width: 42,
-            height: 42,
-            decoration: BoxDecoration(
-              color: isSelected ? AppColors.highlight : Colors.transparent,
-              shape: BoxShape.circle,
-              border: Border.all(
-                  color:
-                      isSelected ? AppColors.highlight : Colors.grey.shade300,
-                  width: 2),
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      physics: const BouncingScrollPhysics(),
+      child: Row(
+        children: List.generate(7, (dayIndex) {
+          final dbDay = dbDays[dayIndex];
+          final isSelected = weekdaysList[index].contains(dbDay);
+          return Padding(
+            padding: EdgeInsets.only(right: isArabic ? 0 : 8.0, left: isArabic ? 8.0 : 0),
+            child: GestureDetector(
+              onTap: () {
+                setState(() {
+                  if (isSelected) {
+                    weekdaysList[index].remove(dbDay);
+                  } else {
+                    weekdaysList[index].add(dbDay);
+                  }
+                });
+                _updateMedicationFromForm(index);
+              },
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: isSelected ? AppColors.highlight : Colors.transparent,
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                      color:
+                          isSelected ? AppColors.highlight : Colors.grey.shade300,
+                      width: 2),
+                ),
+                child: Center(
+                    child: Text(daysList[dayIndex],
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                            color:
+                                isSelected ? Colors.white : Colors.grey.shade600))),
+              ),
             ),
-            child: Center(
-                child: Text(daysList[dayIndex],
-                    style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                        color:
-                            isSelected ? Colors.white : Colors.grey.shade600))),
-          ),
-        );
-      }),
+          );
+        }),
+      ),
     );
   }
 
@@ -678,15 +688,7 @@ class _PharmacyMainScreenState extends ConsumerState<PharmacyMainScreen> {
       child: Container(
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
-          color: Colors.white,
-          boxShadow: [
-            BoxShadow(
-                color: Colors.black.withOpacity(0.05),
-                blurRadius: 20,
-                offset: const Offset(0, -5))
-          ],
-          borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(32), topRight: Radius.circular(32)),
+          color: Colors.transparent,
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,

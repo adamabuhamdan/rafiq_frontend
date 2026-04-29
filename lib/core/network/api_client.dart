@@ -21,6 +21,14 @@ class ApiClient {
         return handler.next(options);
       },
       onError: (DioException e, handler) {
+        if (e.response?.statusCode == 422) {
+          final detail = e.response?.data['detail'];
+          print('==================== 422 VALIDATION ERROR ====================');
+          print('Endpoint: \${e.requestOptions.path}');
+          print('Detail: \$detail');
+          print('Request Data: \${e.requestOptions.data}');
+          print('==============================================================');
+        }
         // Here you can handle global errors like 401 logouts
         return handler.next(e);
       },

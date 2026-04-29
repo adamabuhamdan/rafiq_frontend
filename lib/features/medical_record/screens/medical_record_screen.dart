@@ -241,7 +241,7 @@ class _MedicalProfileScreenState extends ConsumerState<MedicalProfileScreen> {
                           controller: _fullNameController,
                           label: tr('profile.full_name'),
                           validator: (v) =>
-                              v!.isEmpty ? tr('profile.required') : null,
+                              v!.trim().isEmpty ? tr('profile.required') : null,
                         ),
                         const SizedBox(height: 12),
                         _buildDatePicker(),
@@ -252,9 +252,16 @@ class _MedicalProfileScreenState extends ConsumerState<MedicalProfileScreen> {
                           controller: _emailController,
                           label: tr('profile.email'),
                           keyboardType: TextInputType.emailAddress,
-                          validator: (v) => v!.isEmpty || !v.contains('@')
-                              ? tr('profile.valid_email')
-                              : null,
+                          validator: (v) {
+                            final email = v!.trim();
+                            if (email.isEmpty || !email.contains('@')) {
+                              return tr('profile.valid_email');
+                            }
+                            if (!email.endsWith('.com') && !email.endsWith('.co')) {
+                              return tr('profile.valid_email');
+                            }
+                            return null;
+                          },
                         ),
                       ],
                     ),
@@ -531,7 +538,7 @@ class _MedicalProfileScreenState extends ConsumerState<MedicalProfileScreen> {
                 style: const TextStyle(fontSize: 18))),
       ],
       onChanged: (v) => setState(() => _selectedGender = v),
-      validator: (v) => v == null ? tr('profile.required') : null,
+      validator: (v) => v == null || v.trim().isEmpty ? tr('profile.required') : null,
       style: const TextStyle(fontSize: 18, color: Colors.black),
     );
   }

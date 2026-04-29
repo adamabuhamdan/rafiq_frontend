@@ -6,6 +6,7 @@ import '../../auth/providers/auth_provider.dart';
 import '../providers/dashboard_provider.dart';
 import '../../../models/patient_model.dart';
 import '../../medical_record/providers/patient_provider.dart';
+import '../../../core/utils/number_util.dart';
 
 class DailyReportScreen extends ConsumerStatefulWidget {
   const DailyReportScreen({super.key});
@@ -72,19 +73,19 @@ class _DailyReportScreenState extends ConsumerState<DailyReportScreen> {
       final hasHypertension = diseases.contains(DiseaseType.hypertension);
 
       if (hasDiabetes) {
-        if (_sugarM.text.isNotEmpty) reqData['sugar_morning'] = double.tryParse(_sugarM.text);
-        if (_sugarN.text.isNotEmpty) reqData['sugar_noon'] = double.tryParse(_sugarN.text);
-        if (_sugarE.text.isNotEmpty) reqData['sugar_evening'] = double.tryParse(_sugarE.text);
+        if (_sugarM.text.isNotEmpty) reqData['sugar_morning'] = double.tryParse(NumberUtil.toEnglishNumbers(_sugarM.text));
+        if (_sugarN.text.isNotEmpty) reqData['sugar_noon'] = double.tryParse(NumberUtil.toEnglishNumbers(_sugarN.text));
+        if (_sugarE.text.isNotEmpty) reqData['sugar_evening'] = double.tryParse(NumberUtil.toEnglishNumbers(_sugarE.text));
       }
 
       if (hasHypertension) {
-        if (_bpMSys.text.isNotEmpty) reqData['bp_morning_systolic'] = double.tryParse(_bpMSys.text);
-        if (_bpMDia.text.isNotEmpty) reqData['bp_morning_diastolic'] = double.tryParse(_bpMDia.text);
-        if (_bpESys.text.isNotEmpty) reqData['bp_evening_systolic'] = double.tryParse(_bpESys.text);
-        if (_bpEDia.text.isNotEmpty) reqData['bp_evening_diastolic'] = double.tryParse(_bpEDia.text);
+        if (_bpMSys.text.isNotEmpty) reqData['bp_morning_systolic'] = double.tryParse(NumberUtil.toEnglishNumbers(_bpMSys.text));
+        if (_bpMDia.text.isNotEmpty) reqData['bp_morning_diastolic'] = double.tryParse(NumberUtil.toEnglishNumbers(_bpMDia.text));
+        if (_bpESys.text.isNotEmpty) reqData['bp_evening_systolic'] = double.tryParse(NumberUtil.toEnglishNumbers(_bpESys.text));
+        if (_bpEDia.text.isNotEmpty) reqData['bp_evening_diastolic'] = double.tryParse(NumberUtil.toEnglishNumbers(_bpEDia.text));
       }
 
-      if (_notes.text.isNotEmpty) reqData['notes'] = _notes.text;
+      if (_notes.text.trim().isNotEmpty) reqData['notes'] = _notes.text.trim();
 
       final reportService = ref.read(reportServiceProvider);
       final response = await reportService.submitDailyReport(reqData);

@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 import 'package:intl/intl.dart';
+import '../core/utils/number_util.dart';
 
 enum DiseaseType {
   diabetes,
@@ -56,12 +57,12 @@ class Patient extends Equatable {
   Map<String, dynamic> toJson() {
     return {
       'full_name': fullName,
-      'date_of_birth': DateFormat('yyyy-MM-dd').format(dateOfBirth),
+      'date_of_birth': NumberUtil.toEnglishNumbers(DateFormat('yyyy-MM-dd').format(dateOfBirth)),
       'gender': gender,
       'email': email,
       'diseases': diseases.map((e) => e.name).toList(),
-      'wake_time': wakeTime,
-      'sleep_time': sleepTime,
+      'wake_time': NumberUtil.toEnglishNumbers(wakeTime),
+      'sleep_time': NumberUtil.toEnglishNumbers(sleepTime),
       'medical_description': medicalDescription,
       'last_test_results': lastTestResults,
       'last_test_pdf_url': lastTestPdfUrl,

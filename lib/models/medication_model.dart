@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 import 'package:intl/intl.dart';
+import '../core/utils/number_util.dart';
 
 class Medication extends Equatable {
   final String id;
@@ -67,10 +68,10 @@ class Medication extends Equatable {
       'id': id,
       'name': name,
       'active_ingredient': activeIngredient,
-      'dosage_frequency': dosage,
+      'dosage_frequency': NumberUtil.toEnglishNumbers(dosage),
       'weekdays': weekdays,
       // Convert each DateTime back to "HH:mm:ss" string for the backend
-      'times': times.map((dt) => DateFormat('HH:mm:ss').format(dt)).toList(),
+      'times': times.map((dt) => NumberUtil.toEnglishNumbers(DateFormat('HH:mm:ss').format(dt))).toList(),
       'is_primary': isPrimary,
       'ai_instruction': aiInstruction,
     };

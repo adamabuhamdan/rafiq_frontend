@@ -1,5 +1,6 @@
 import '../core/network/api_client.dart';
 import '../models/medication_model.dart';
+import '../core/utils/number_util.dart';
 
 class PharmacyService {
   final ApiClient _apiClient;
@@ -39,7 +40,7 @@ class PharmacyService {
                   'id': m.id,
                   'name': m.name,
                   'active_ingredient': m.activeIngredient,
-                  'dosage_frequency': m.dosage,
+                  'dosage_frequency': NumberUtil.toEnglishNumbers(m.dosage),
                   'is_primary': m.isPrimary,
                 })
             .toList(),
@@ -77,7 +78,7 @@ class PharmacyService {
       String medicationId, String scheduledTime) async {
     await _apiClient.post('/pharmacy/log-dose', data: {
       'medication_id': medicationId,
-      'scheduled_time': scheduledTime,
+      'scheduled_time': NumberUtil.toEnglishNumbers(scheduledTime),
     });
   }
 }
